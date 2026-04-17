@@ -62,8 +62,15 @@ export function PedidoChatModal({
     forma_pagamento: "pix",
     observacoes: "",
     endereco: "",
+    endereco_numero: "",
+    endereco_complemento: "",
+    endereco_bairro: "",
+    endereco_cidade: "",
+    endereco_estado: "",
+    endereco_cep: "",
     troco_para: "",
   });
+  const [enderecoSalvo, setEnderecoSalvo] = useState(false);
 
   useEffect(() => {
     if (open) {
