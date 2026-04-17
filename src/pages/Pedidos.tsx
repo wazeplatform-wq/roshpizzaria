@@ -81,9 +81,9 @@ export default function Pedidos() {
       if (!cid) return;
 
       const [pedidosRes, itensRes, produtosRes] = await Promise.all([
-        supabase.from("pedidos" as any).select("*").eq("company_id", cid).order("created_at", { ascending: false }),
-        supabase.from("pedido_itens" as any).select("*").eq("company_id", cid),
-        supabase.from("produtos_servicos").select("id, nome, preco_sugerido").eq("company_id", cid).eq("ativo", true).neq("tipo_produto", "insumo"),
+        (supabase.from("pedidos" as any) as any).select("*").eq("company_id", cid).order("created_at", { ascending: false }),
+        (supabase.from("pedido_itens" as any) as any).select("*").eq("company_id", cid),
+        (supabase.from("produtos_servicos") as any).select("id, nome, preco_sugerido").eq("company_id", cid).eq("ativo", true),
       ]);
 
       if (pedidosRes.error) throw pedidosRes.error;
@@ -92,7 +92,7 @@ export default function Pedidos() {
 
       setPedidos((pedidosRes.data || []) as Pedido[]);
       setItens((itensRes.data || []) as PedidoItem[]);
-      setProdutos(produtosRes.data || []);
+      setProdutos((produtosRes.data || []) as any);
     } catch (error) {
       console.error(error);
       toast.error("Erro ao carregar pedidos");
