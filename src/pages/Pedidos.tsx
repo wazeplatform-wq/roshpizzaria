@@ -770,15 +770,23 @@ export default function Pedidos() {
                               {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                             </span>
                           </div>
-                          <Button size="sm" className="w-full" onClick={() => fecharContaMesa(mesa)}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Fechar Conta
-                          </Button>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button size="sm" variant="outline" onClick={() => openPedidoMesa(mesa)}>
+                              <Plus className="h-3 w-3 mr-1" /> Item
+                            </Button>
+                            <Button size="sm" onClick={() => fecharContaMesa(mesa)}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Fechar
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-2">
                           <p className="text-xs text-center text-muted-foreground py-2">
                             Sem pedidos abertos
                           </p>
+                          <Button size="sm" className="w-full" onClick={() => openPedidoMesa(mesa)}>
+                            <ClipboardList className="h-3 w-3 mr-1" /> Novo Pedido
+                          </Button>
                           <div className="grid grid-cols-2 gap-1">
                             {mesa.status !== "livre" && (
                               <Button size="sm" variant="outline" onClick={() => toggleMesaStatus(mesa, "livre")}>
