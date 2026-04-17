@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Printer, Bike, CookingPot, MessageCircle, Instagram,
-  ShoppingBag, Store, Utensils, Users, Trash2, CheckCircle2,
+  ShoppingBag, Store, Utensils, Users, Trash2, CheckCircle2, X, ClipboardList,
 } from "lucide-react";
 
 type PedidoStatus = "novo" | "aceito" | "em_producao" | "pronto" | "saiu_entrega" | "entregue" | "cancelado";
@@ -88,6 +88,7 @@ export default function Pedidos() {
   const [saving, setSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mesaDialogOpen, setMesaDialogOpen] = useState(false);
+  const [pedidoMesaDialog, setPedidoMesaDialog] = useState<Mesa | null>(null);
   const [filtroCanal, setFiltroCanal] = useState<string>("todos");
 
   const [form, setForm] = useState({
@@ -105,6 +106,16 @@ export default function Pedidos() {
     nome: "",
     capacidade: "4",
     localizacao: "",
+  });
+
+  // Carrinho do pedido na mesa
+  const [mesaPedidoForm, setMesaPedidoForm] = useState({
+    cliente_nome: "",
+    observacoes: "",
+    itens: [] as Array<{ produto_id: string; nome: string; preco: number; quantidade: number; obs: string }>,
+    produto_id: "",
+    quantidade: "1",
+    item_obs: "",
   });
 
   const load = useCallback(async () => {
@@ -346,6 +357,108 @@ export default function Pedidos() {
       await load();
     } catch {
       toast.error("Erro ao excluir mesa");
+    }
+  };
+
+  // ========= PEDIDO NA MESA =========
+  const openPedidoMesa = (mesa: Mesa) => {
+    setMesaPedidoForm({
+      cliente_nome: "",
+      observacoes: "",
+      itens: [],
+      produto_id: "",
+      quantidade: "1",
+      item_obs: "",
+    });
+    setPedidoMesaDialog(mesa);
+  };
+
+  const addItemMesa = () => {
+    const produto = produtos.find((p) => p.id === mesaPedidoForm.produto_id);
+    if (!produto) return toast.error("Selecione um produto");
+    const qtd = Number(mesaPedidoForm.quantidade || 1);
+    setMesaPedidoForm({
+      ...mesaPedidoForm,
+      itens: [
+        ...mesaPedidoForm.itens,
+        {
+          produto_id: produto.id,
+          nome: produto.nome,
+          preco: Number(produto.preco_sugerido || 0),
+          quantidade: qtd,
+          obs: mesaPedidoForm.item_obs.trim(),
+        },
+      ],
+      produto_id: "",
+      quantidade: "1",
+      item_obs: "",
+    });
+  };
+
+  const removeItemMesa = (idx: number) => {
+    setMesaPedidoForm({
+      ...mesaPedidoForm,
+      itens: mesaPedidoForm.itens.filter((_, i) => i !== idx),
+    });
+  };
+
+  const totalMesaPedido = mesaPedidoForm.itens.reduce((s, i) => s + i.preco * i.quantidade, 0);
+
+  const criarPedidoMesa = async () => {
+    if (!companyId || !pedidoMesaDialog) return;
+    if (mesaPedidoForm.itens.length === 0) return toast.error("Adicione ao menos 1 item");
+    setSaving(true);
+    try {
+      const subtotal = totalMesaPedido;
+      const { data: pedido, error } = await (supabase.from("pedidos" as any) as any)
+        .insert({
+          company_id: companyId,
+          cliente_nome: mesaPedidoForm.cliente_nome.trim() || `Mesa ${pedidoMesaDialog.numero}`,
+          cliente_telefone: "",
+          canal: "interno",
+          tipo_atendimento: "mesa",
+          mesa_id: pedidoMesaDialog.id,
+          forma_pagamento: null,
+          subtotal,
+          total: subtotal,
+          status: "em_producao",
+          observacoes: mesaPedidoForm.observacoes.trim() || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const pedidoData = pedido as any;
+
+      const itensPayload = mesaPedidoForm.itens.map((i) => ({
+        pedido_id: pedidoData.id,
+        company_id: companyId,
+        produto_id: i.produto_id,
+        produto_nome: i.nome,
+        quantidade: i.quantidade,
+        valor_unitario: i.preco,
+        valor_total: i.preco * i.quantidade,
+        observacoes: i.obs || null,
+      }));
+      await (supabase.from("pedido_itens" as any) as any).insert(itensPayload);
+
+      await (supabase.from("pedido_eventos" as any) as any).insert({
+        company_id: companyId,
+        pedido_id: pedidoData.id,
+        status: "em_producao",
+        descricao: `Pedido lançado na Mesa ${pedidoMesaDialog.numero}`,
+      });
+
+      // Marca mesa como ocupada
+      await (supabase.from("mesas" as any) as any).update({ status: "ocupada" }).eq("id", pedidoMesaDialog.id);
+
+      toast.success(`Pedido lançado na Mesa ${pedidoMesaDialog.numero}`);
+      setPedidoMesaDialog(null);
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao criar pedido");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -657,15 +770,23 @@ export default function Pedidos() {
                               {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                             </span>
                           </div>
-                          <Button size="sm" className="w-full" onClick={() => fecharContaMesa(mesa)}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Fechar Conta
-                          </Button>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Button size="sm" variant="outline" onClick={() => openPedidoMesa(mesa)}>
+                              <Plus className="h-3 w-3 mr-1" /> Item
+                            </Button>
+                            <Button size="sm" onClick={() => fecharContaMesa(mesa)}>
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Fechar
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-2">
                           <p className="text-xs text-center text-muted-foreground py-2">
                             Sem pedidos abertos
                           </p>
+                          <Button size="sm" className="w-full" onClick={() => openPedidoMesa(mesa)}>
+                            <ClipboardList className="h-3 w-3 mr-1" /> Novo Pedido
+                          </Button>
                           <div className="grid grid-cols-2 gap-1">
                             {mesa.status !== "livre" && (
                               <Button size="sm" variant="outline" onClick={() => toggleMesaStatus(mesa, "livre")}>
@@ -691,6 +812,110 @@ export default function Pedidos() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ============ DIALOG: NOVO PEDIDO NA MESA ============ */}
+      <Dialog open={!!pedidoMesaDialog} onOpenChange={(o) => !o && setPedidoMesaDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Novo pedido — Mesa {pedidoMesaDialog?.numero}
+              {pedidoMesaDialog?.nome && ` (${pedidoMesaDialog.nome})`}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do cliente / responsável (opcional)</Label>
+              <Input
+                placeholder={`Mesa ${pedidoMesaDialog?.numero || ""}`}
+                value={mesaPedidoForm.cliente_nome}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, cliente_nome: e.target.value })}
+              />
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-3">
+              <Label className="text-sm font-semibold">Adicionar item</Label>
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-6">
+                  <Select
+                    value={mesaPedidoForm.produto_id}
+                    onValueChange={(v) => setMesaPedidoForm({ ...mesaPedidoForm, produto_id: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Produto" /></SelectTrigger>
+                    <SelectContent>
+                      {produtos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome} — {Number(p.preco_sugerido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Qtd"
+                    value={mesaPedidoForm.quantidade}
+                    onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, quantidade: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-4">
+                  <Button onClick={addItemMesa} className="w-full" variant="secondary">
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+              <Input
+                placeholder="Observação do item (ex: sem cebola)"
+                value={mesaPedidoForm.item_obs}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, item_obs: e.target.value })}
+              />
+            </div>
+
+            {mesaPedidoForm.itens.length > 0 && (
+              <div className="rounded-lg border divide-y max-h-60 overflow-y-auto">
+                {mesaPedidoForm.itens.map((it, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 text-sm">
+                    <div className="flex-1">
+                      <div className="font-medium">{it.quantidade}x {it.nome}</div>
+                      {it.obs && <div className="text-xs text-muted-foreground">{it.obs}</div>}
+                    </div>
+                    <div className="font-semibold mr-3">
+                      {(it.preco * it.quantidade).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </div>
+                    <Button size="icon" variant="ghost" onClick={() => removeItemMesa(idx)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Observações gerais</Label>
+              <Textarea
+                value={mesaPedidoForm.observacoes}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, observacoes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-sm text-muted-foreground">Total do pedido</span>
+              <span className="text-xl font-bold text-primary">
+                {totalMesaPedido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPedidoMesaDialog(null)}>Cancelar</Button>
+              <Button onClick={criarPedidoMesa} disabled={saving || mesaPedidoForm.itens.length === 0}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Lançar pedido
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
