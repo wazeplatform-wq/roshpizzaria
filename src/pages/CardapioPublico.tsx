@@ -403,7 +403,7 @@ export default function CardapioPublico() {
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-10">
         {/* Os mais pedidos */}
         {topShown.length > 0 && (
-          <section>
+          <section id="section-destaques" className="scroll-mt-32">
             <h2 className="font-bold text-neutral-900 mb-4">Os mais pedidos</h2>
             <div className="flex gap-5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
               {topShown.map((p) => (
@@ -430,7 +430,7 @@ export default function CardapioPublico() {
           const items = filteredProducts.filter((p) => (p.categoria || "Outros") === category);
           if (!items.length) return null;
           return (
-            <section key={category}>
+            <section key={category} id={`section-${category.replace(/\s+/g, '-')}`} className="scroll-mt-32">
               <h2 className="text-xl font-bold text-neutral-900 mb-4">{category}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {items.map((product) => (
