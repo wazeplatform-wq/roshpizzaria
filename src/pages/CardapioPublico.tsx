@@ -289,11 +289,11 @@ export default function CardapioPublico() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-neutral-800 pb-24">
+    <div className="min-h-screen bg-neutral-50 text-neutral-800 pb-32">
       {/* Header */}
-      <header className="sticky top-0 z-40" style={{ backgroundColor: primary }}>
+      <header className="sticky top-0 z-40 shadow-sm" style={{ backgroundColor: primary }}>
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-2 text-white">
-          <h1 className="font-bold text-lg sm:text-xl truncate flex-1">
+          <h1 className="font-bold text-lg sm:text-xl truncate flex-1 tracking-tight">
             {config.nome_loja || "Cardápio Digital"}
           </h1>
           <a
@@ -301,7 +301,7 @@ export default function CardapioPublico() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition"
+            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition hover-scale"
           >
             <Instagram className="h-5 w-5" />
           </a>
@@ -310,7 +310,7 @@ export default function CardapioPublico() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Localização no Google Maps"
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition"
+            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition hover-scale"
           >
             <MapPin className="h-5 w-5" />
           </a>
@@ -330,41 +330,62 @@ export default function CardapioPublico() {
           </button>
         </div>
         {searchOpen && (
-          <div className="max-w-5xl mx-auto px-4 pb-3">
+          <div className="max-w-5xl mx-auto px-4 pb-3 animate-fade-in">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
               <Input
                 autoFocus
-                placeholder="Buscar no cardápio..."
+                placeholder="Buscar pizza, bebida..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-white border-0 h-10"
+                className="pl-9 bg-white border-0 h-11 rounded-full shadow-md"
               />
             </div>
           </div>
         )}
       </header>
 
+      {/* Hero banner */}
+      <div className="relative h-44 sm:h-56 overflow-hidden">
+        <img
+          src={config.banner_url || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1600&q=80"}
+          alt="Banner"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white max-w-5xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-extrabold drop-shadow-lg">
+            {config.nome_loja || "Sabor que conquista 🍕"}
+          </h2>
+          <p className="text-sm sm:text-base text-white/90 mt-1 drop-shadow">
+            {config.descricao_loja || "Massa artesanal, ingredientes frescos e entrega rapidinha"}
+          </p>
+        </div>
+      </div>
+
       {/* Subheader info */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div className="flex items-center justify-between text-sm text-neutral-600">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span>
-              {config.horario_abertura
-                ? `Abre hoje às ${config.horario_abertura}`
-                : config.aberto === false
-                ? "Loja fechada"
-                : "Aberto agora"}
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-100 p-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap text-sm">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              {config.aberto === false ? "Fechado" : "Aberto agora"}
             </span>
-            <span className="text-neutral-300">•</span>
-            <span>
+            <span className="text-neutral-400">•</span>
+            <span className="text-neutral-600">
               {Number(config.pedido_minimo || 0) > 0
-                ? `Pedido mínimo ${formatBRL(Number(config.pedido_minimo))}`
+                ? `Mín ${formatBRL(Number(config.pedido_minimo))}`
                 : "Sem pedido mínimo"}
             </span>
+            {Number(config.taxa_entrega || 0) > 0 && (
+              <>
+                <span className="text-neutral-400">•</span>
+                <span className="text-neutral-600">Entrega {formatBRL(Number(config.taxa_entrega))}</span>
+              </>
+            )}
           </div>
           <button
-            className="font-semibold hover:underline"
+            className="text-sm font-semibold hover:underline"
             style={{ color: primary }}
             onClick={() =>
               toast.message(config.nome_loja || "Loja", {
@@ -374,7 +395,7 @@ export default function CardapioPublico() {
               })
             }
           >
-            Perfil da loja
+            Sobre a loja →
           </button>
         </div>
 
@@ -385,7 +406,7 @@ export default function CardapioPublico() {
         )}
 
         {config.mensagem_loja && (
-          <div className="mt-3 text-sm text-neutral-600 border-l-4 pl-3" style={{ borderColor: primary }}>
+          <div className="mt-3 text-sm text-neutral-600 border-l-4 pl-3 bg-amber-50/50 py-2 rounded-r" style={{ borderColor: primary }}>
             {config.mensagem_loja}
           </div>
         )}
@@ -393,13 +414,13 @@ export default function CardapioPublico() {
 
       {/* Category nav */}
       {categories.length > 0 && (
-        <nav className="sticky top-16 z-30 bg-white border-b border-neutral-200 mt-4">
+        <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur border-b border-neutral-200 mt-4 shadow-sm">
           <div className="max-w-5xl mx-auto px-4">
             <div className="flex gap-2 overflow-x-auto py-3 scrollbar-thin">
               {topShown.length > 0 && (
                 <button
                   onClick={() => document.getElementById('section-destaques')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap"
+                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap hover-scale"
                 >
                   ⭐ Mais pedidos
                 </button>
@@ -408,7 +429,7 @@ export default function CardapioPublico() {
                 <button
                   key={cat}
                   onClick={() => document.getElementById(`section-${cat.replace(/\s+/g, '-')}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap"
+                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap hover-scale"
                 >
                   {cat}
                 </button>
@@ -421,21 +442,28 @@ export default function CardapioPublico() {
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-10">
         {/* Os mais pedidos */}
         {topShown.length > 0 && (
-          <section id="section-destaques" className="scroll-mt-32">
-            <h2 className="font-bold text-neutral-900 mb-4">Os mais pedidos</h2>
-            <div className="flex gap-5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
+          <section id="section-destaques" className="scroll-mt-32 animate-fade-in">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="text-xl font-extrabold text-neutral-900 tracking-tight">🔥 Os mais pedidos</h2>
+              <span className="text-xs text-neutral-500">campeões de venda</span>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
               {topShown.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setSelectedProduct(p)}
-                  className="flex-shrink-0 w-24 sm:w-28 text-left group"
+                  className="flex-shrink-0 w-36 sm:w-40 text-left group bg-white rounded-2xl shadow-sm hover:shadow-lg border border-neutral-100 overflow-hidden transition-all hover-scale"
                 >
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-neutral-100 ring-1 ring-neutral-200 group-hover:ring-2 transition" style={{ ['--tw-ring-color' as any]: primary }}>
-                    <ProductImage src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover" />
+                  <div className="relative w-full h-28 bg-neutral-100 overflow-hidden">
+                    <ProductImage src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/95 text-amber-600 shadow">
+                      ⭐ POPULAR
+                    </span>
                   </div>
-                  <div className="mt-2 text-sm font-semibold text-neutral-900 truncate">{p.nome}</div>
-                  <div className="text-xs text-neutral-500">
-                    A partir de <span className="font-semibold text-neutral-700">{formatBRL(p.preco_sugerido)}</span>
+                  <div className="p-2.5">
+                    <div className="text-sm font-bold text-neutral-900 line-clamp-1">{p.nome}</div>
+                    <div className="text-xs text-neutral-500 mt-0.5">A partir de</div>
+                    <div className="text-sm font-extrabold" style={{ color: primary }}>{formatBRL(p.preco_sugerido)}</div>
                   </div>
                 </button>
               ))}
@@ -448,29 +476,51 @@ export default function CardapioPublico() {
           const items = filteredProducts.filter((p) => (p.categoria || "Outros") === category);
           if (!items.length) return null;
           return (
-            <section key={category} id={`section-${category.replace(/\s+/g, '-')}`} className="scroll-mt-32">
-              <h2 className="text-xl font-bold text-neutral-900 mb-4">{category}</h2>
+            <section key={category} id={`section-${category.replace(/\s+/g, '-')}`} className="scroll-mt-32 animate-fade-in">
+              <h2 className="text-xl font-extrabold text-neutral-900 mb-4 tracking-tight flex items-center gap-2">
+                {category}
+                <span className="text-xs font-medium text-neutral-400">({items.length})</span>
+              </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {items.map((product) => (
                   <button
                     key={product.id}
                     onClick={() => setSelectedProduct(product)}
-                    className="text-left flex items-stretch gap-3 border border-neutral-200 rounded-lg p-3 hover:border-neutral-300 hover:shadow-sm transition bg-white"
+                    className="text-left flex items-stretch gap-3 bg-white border border-neutral-100 rounded-2xl p-3 hover:shadow-lg hover:border-neutral-200 transition-all group relative overflow-hidden"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-neutral-900">{product.nome}</div>
-                      <p className="text-xs text-neutral-500 line-clamp-2 mt-0.5">
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex items-start gap-2">
+                        <div className="font-bold text-neutral-900 leading-tight flex-1">{product.nome}</div>
+                        {product.destaque_cardapio && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 flex-shrink-0">
+                            ⭐
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-500 line-clamp-2 mt-1 flex-1">
                         {product.descricao || product.descricao_curta || product.descricao_completa || ""}
                       </p>
-                      <div className="mt-3 text-xs text-neutral-500">A partir de</div>
-                      <div className="font-bold text-neutral-900">{formatBRL(product.preco_sugerido)}</div>
+                      <div className="mt-2 flex items-end justify-between gap-2">
+                        <div>
+                          <div className="text-[10px] text-neutral-400 uppercase tracking-wide">A partir de</div>
+                          <div className="text-base font-extrabold" style={{ color: primary }}>{formatBRL(product.preco_sugerido)}</div>
+                        </div>
+                        {product.permite_meio_a_meio && (
+                          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-orange-50 text-orange-600">
+                            ½ + ½
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-md overflow-hidden bg-neutral-100 flex-shrink-0">
+                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
                       <ProductImage
                         src={product.imagem_url}
                         alt={product.nome}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
+                      <div className="absolute bottom-1 right-1 h-7 w-7 rounded-full bg-white shadow-md flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 transition" style={{ color: primary }}>
+                        <Plus className="h-4 w-4" strokeWidth={3} />
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -484,6 +534,24 @@ export default function CardapioPublico() {
         )}
       </main>
 
+      {/* Sticky cart bar */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-16 inset-x-0 z-40 px-4 pb-2 animate-fade-in">
+          <button
+            onClick={() => setCartOpen(true)}
+            className="max-w-5xl mx-auto w-full h-14 rounded-2xl shadow-2xl text-white flex items-center justify-between px-5 font-semibold hover:opacity-95 transition"
+            style={{ backgroundColor: primary }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="bg-white/20 rounded-full h-7 w-7 flex items-center justify-center text-sm font-bold">
+                {cartCount}
+              </span>
+              Ver carrinho
+            </span>
+            <span className="text-base">{formatBRL(subtotal)}</span>
+          </button>
+        </div>
+      )}
       {/* WhatsApp floating button */}
       <a
         href="https://api.whatsapp.com/send/?phone=558798247745&text&type=phone_number&app_absent=0&utm_source=ig"
