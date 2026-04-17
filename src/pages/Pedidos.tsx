@@ -186,8 +186,8 @@ export default function Pedidos() {
       if (error) throw error;
       const pedidoData = pedido as any;
 
-      const { error: itemError } = await supabase.from("pedido_itens" as any).insert({
-        pedido_id: pedido.id,
+      const { error: itemError } = await (supabase.from("pedido_itens" as any) as any).insert({
+        pedido_id: pedidoData.id,
         company_id: companyId,
         produto_id: produto.id,
         produto_nome: produto.nome,
@@ -197,9 +197,9 @@ export default function Pedidos() {
       });
       if (itemError) throw itemError;
 
-      await supabase.from("pedido_eventos" as any).insert({
+      await (supabase.from("pedido_eventos" as any) as any).insert({
         company_id: companyId,
-        pedido_id: pedido.id,
+        pedido_id: pedidoData.id,
         status: "novo",
         descricao: "Pedido criado manualmente no painel",
       });
