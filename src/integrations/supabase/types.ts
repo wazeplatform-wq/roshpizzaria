@@ -3878,6 +3878,59 @@ export type Database = {
           },
         ]
       }
+      loja_configuracoes: {
+        Row: {
+          aceita_pedidos: boolean
+          company_id: string
+          created_at: string
+          formas_pagamento: Json | null
+          horario_funcionamento: Json | null
+          id: string
+          mensagem_boas_vindas: string | null
+          nome_loja: string | null
+          pedido_minimo: number | null
+          taxa_entrega: number | null
+          tempo_preparo_min: number | null
+          updated_at: string
+        }
+        Insert: {
+          aceita_pedidos?: boolean
+          company_id: string
+          created_at?: string
+          formas_pagamento?: Json | null
+          horario_funcionamento?: Json | null
+          id?: string
+          mensagem_boas_vindas?: string | null
+          nome_loja?: string | null
+          pedido_minimo?: number | null
+          taxa_entrega?: number | null
+          tempo_preparo_min?: number | null
+          updated_at?: string
+        }
+        Update: {
+          aceita_pedidos?: boolean
+          company_id?: string
+          created_at?: string
+          formas_pagamento?: Json | null
+          horario_funcionamento?: Json | null
+          id?: string
+          mensagem_boas_vindas?: string | null
+          nome_loja?: string | null
+          pedido_minimo?: number | null
+          taxa_entrega?: number | null
+          tempo_preparo_min?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loja_configuracoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_cards: {
         Row: {
           company_id: string
@@ -4066,6 +4119,53 @@ export type Database = {
         }
         Relationships: []
       }
+      mesas: {
+        Row: {
+          capacidade: number
+          company_id: string
+          created_at: string
+          id: string
+          localizacao: string | null
+          nome: string | null
+          numero: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacidade?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          localizacao?: string | null
+          nome?: string | null
+          numero: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacidade?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          localizacao?: string | null
+          nome?: string | null
+          numero?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mesas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           company_id: string | null
@@ -4144,6 +4244,262 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_enderecos: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          company_id: string
+          complemento: string | null
+          created_at: string
+          estado: string | null
+          id: string
+          logradouro: string | null
+          nome_contato: string | null
+          numero: string | null
+          pedido_id: string
+          referencia: string | null
+          telefone_contato: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          company_id: string
+          complemento?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          logradouro?: string | null
+          nome_contato?: string | null
+          numero?: string | null
+          pedido_id: string
+          referencia?: string | null
+          telefone_contato?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          company_id?: string
+          complemento?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          logradouro?: string | null
+          nome_contato?: string | null
+          numero?: string | null
+          pedido_id?: string
+          referencia?: string | null
+          telefone_contato?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_enderecos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_enderecos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_eventos: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          pedido_id: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          pedido_id: string
+          status: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          pedido_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_eventos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_eventos_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_itens: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          observacoes: string | null
+          pedido_id: string
+          produto_id: string | null
+          produto_nome: string
+          quantidade: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_id: string
+          produto_id?: string | null
+          produto_nome: string
+          quantidade?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_id?: string
+          produto_id?: string | null
+          produto_nome?: string
+          quantidade?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          canal: string
+          cliente_nome: string
+          cliente_telefone: string
+          codigo_pedido: string
+          company_id: string
+          created_at: string
+          desconto: number
+          forma_pagamento: string | null
+          id: string
+          lead_id: string | null
+          mesa_id: string | null
+          observacoes: string | null
+          origem_publica: Json | null
+          status: string
+          status_pagamento: string
+          subtotal: number
+          taxa_entrega: number
+          tipo_atendimento: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          canal?: string
+          cliente_nome: string
+          cliente_telefone: string
+          codigo_pedido?: string
+          company_id: string
+          created_at?: string
+          desconto?: number
+          forma_pagamento?: string | null
+          id?: string
+          lead_id?: string | null
+          mesa_id?: string | null
+          observacoes?: string | null
+          origem_publica?: Json | null
+          status?: string
+          status_pagamento?: string
+          subtotal?: number
+          taxa_entrega?: number
+          tipo_atendimento?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          canal?: string
+          cliente_nome?: string
+          cliente_telefone?: string
+          codigo_pedido?: string
+          company_id?: string
+          created_at?: string
+          desconto?: number
+          forma_pagamento?: string | null
+          id?: string
+          lead_id?: string | null
+          mesa_id?: string | null
+          observacoes?: string | null
+          origem_publica?: Json | null
+          status?: string
+          status_pagamento?: string
+          subtotal?: number
+          taxa_entrega?: number
+          tipo_atendimento?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_mesa_id_fkey"
+            columns: ["mesa_id"]
+            isOneToOne: false
+            referencedRelation: "mesas"
             referencedColumns: ["id"]
           },
         ]
@@ -6549,6 +6905,7 @@ export type Database = {
       }
       elevate_self_to_super_admin: { Args: never; Returns: Json }
       formatar_telefone: { Args: { telefone: string }; Returns: string }
+      generate_pedido_codigo: { Args: never; Returns: string }
       generate_protocol_number: {
         Args: { p_company_id: string }
         Returns: string
