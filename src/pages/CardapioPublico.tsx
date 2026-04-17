@@ -533,8 +533,26 @@ export default function CardapioPublico() {
           <div className="text-center text-sm text-neutral-500 py-12">Nenhum item encontrado.</div>
         )}
       </main>
-      {/* Header */}
-      <header className="sticky top-0 z-40" style={{ backgroundColor: primary }}>
+
+      {/* Sticky cart bar */}
+      {cartCount > 0 && (
+        <div className="fixed bottom-16 inset-x-0 z-40 px-4 pb-2 animate-fade-in">
+          <button
+            onClick={() => setCartOpen(true)}
+            className="max-w-5xl mx-auto w-full h-14 rounded-2xl shadow-2xl text-white flex items-center justify-between px-5 font-semibold hover:opacity-95 transition"
+            style={{ backgroundColor: primary }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="bg-white/20 rounded-full h-7 w-7 flex items-center justify-center text-sm font-bold">
+                {cartCount}
+              </span>
+              Ver carrinho
+            </span>
+            <span className="text-base">{formatBRL(subtotal)}</span>
+          </button>
+        </div>
+      )}
+
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-2 text-white">
           <h1 className="font-bold text-lg sm:text-xl truncate flex-1">
             {config.nome_loja || "Cardápio Digital"}
