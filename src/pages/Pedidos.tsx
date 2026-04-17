@@ -360,6 +360,108 @@ export default function Pedidos() {
     }
   };
 
+  // ========= PEDIDO NA MESA =========
+  const openPedidoMesa = (mesa: Mesa) => {
+    setMesaPedidoForm({
+      cliente_nome: "",
+      observacoes: "",
+      itens: [],
+      produto_id: "",
+      quantidade: "1",
+      item_obs: "",
+    });
+    setPedidoMesaDialog(mesa);
+  };
+
+  const addItemMesa = () => {
+    const produto = produtos.find((p) => p.id === mesaPedidoForm.produto_id);
+    if (!produto) return toast.error("Selecione um produto");
+    const qtd = Number(mesaPedidoForm.quantidade || 1);
+    setMesaPedidoForm({
+      ...mesaPedidoForm,
+      itens: [
+        ...mesaPedidoForm.itens,
+        {
+          produto_id: produto.id,
+          nome: produto.nome,
+          preco: Number(produto.preco_sugerido || 0),
+          quantidade: qtd,
+          obs: mesaPedidoForm.item_obs.trim(),
+        },
+      ],
+      produto_id: "",
+      quantidade: "1",
+      item_obs: "",
+    });
+  };
+
+  const removeItemMesa = (idx: number) => {
+    setMesaPedidoForm({
+      ...mesaPedidoForm,
+      itens: mesaPedidoForm.itens.filter((_, i) => i !== idx),
+    });
+  };
+
+  const totalMesaPedido = mesaPedidoForm.itens.reduce((s, i) => s + i.preco * i.quantidade, 0);
+
+  const criarPedidoMesa = async () => {
+    if (!companyId || !pedidoMesaDialog) return;
+    if (mesaPedidoForm.itens.length === 0) return toast.error("Adicione ao menos 1 item");
+    setSaving(true);
+    try {
+      const subtotal = totalMesaPedido;
+      const { data: pedido, error } = await (supabase.from("pedidos" as any) as any)
+        .insert({
+          company_id: companyId,
+          cliente_nome: mesaPedidoForm.cliente_nome.trim() || `Mesa ${pedidoMesaDialog.numero}`,
+          cliente_telefone: "",
+          canal: "interno",
+          tipo_atendimento: "mesa",
+          mesa_id: pedidoMesaDialog.id,
+          forma_pagamento: null,
+          subtotal,
+          total: subtotal,
+          status: "em_producao",
+          observacoes: mesaPedidoForm.observacoes.trim() || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      const pedidoData = pedido as any;
+
+      const itensPayload = mesaPedidoForm.itens.map((i) => ({
+        pedido_id: pedidoData.id,
+        company_id: companyId,
+        produto_id: i.produto_id,
+        produto_nome: i.nome,
+        quantidade: i.quantidade,
+        valor_unitario: i.preco,
+        valor_total: i.preco * i.quantidade,
+        observacoes: i.obs || null,
+      }));
+      await (supabase.from("pedido_itens" as any) as any).insert(itensPayload);
+
+      await (supabase.from("pedido_eventos" as any) as any).insert({
+        company_id: companyId,
+        pedido_id: pedidoData.id,
+        status: "em_producao",
+        descricao: `Pedido lançado na Mesa ${pedidoMesaDialog.numero}`,
+      });
+
+      // Marca mesa como ocupada
+      await (supabase.from("mesas" as any) as any).update({ status: "ocupada" }).eq("id", pedidoMesaDialog.id);
+
+      toast.success(`Pedido lançado na Mesa ${pedidoMesaDialog.numero}`);
+      setPedidoMesaDialog(null);
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao criar pedido");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ========== UI ==========
   const renderCanalBadge = (canal: string) => {
     const info = CANAL_INFO[canal] || CANAL_INFO.interno;
