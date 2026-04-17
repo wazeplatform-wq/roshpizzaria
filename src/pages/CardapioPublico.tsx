@@ -64,6 +64,7 @@ export default function CardapioPublico() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
   const [selectedQty, setSelectedQty] = useState(1);
+  const [secondFlavor, setSecondFlavor] = useState<string>("");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
