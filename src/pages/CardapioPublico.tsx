@@ -415,7 +415,7 @@ export default function CardapioPublico() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-neutral-900">{product.nome}</div>
                       <p className="text-xs text-neutral-500 line-clamp-2 mt-0.5">
-                        {product.descricao_curta || product.descricao_completa || ""}
+                        {product.descricao || product.descricao_curta || product.descricao_completa || ""}
                       </p>
                       <div className="mt-3 text-xs text-neutral-500">A partir de</div>
                       <div className="font-bold text-neutral-900">{formatBRL(product.preco_sugerido)}</div>
