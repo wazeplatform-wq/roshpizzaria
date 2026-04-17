@@ -5105,6 +5105,103 @@ export type Database = {
           },
         ]
       }
+      produto_grupos_opcoes: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          maximo_escolhas: number
+          minimo_escolhas: number
+          nome: string
+          obrigatorio: boolean
+          ordem: number
+          produto_id: string
+          tipo_grupo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          maximo_escolhas?: number
+          minimo_escolhas?: number
+          nome: string
+          obrigatorio?: boolean
+          ordem?: number
+          produto_id: string
+          tipo_grupo?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          maximo_escolhas?: number
+          minimo_escolhas?: number
+          nome?: string
+          obrigatorio?: boolean
+          ordem?: number
+          produto_id?: string
+          tipo_grupo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_grupos_opcoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_opcoes: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          grupo_id: string
+          id: string
+          nome: string
+          ordem: number
+          preco_adicional: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          grupo_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          preco_adicional?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          grupo_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          preco_adicional?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_opcoes_grupo_id_fkey"
+            columns: ["grupo_id"]
+            isOneToOne: false
+            referencedRelation: "produto_grupos_opcoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos_servicos: {
         Row: {
           ativo: boolean | null
