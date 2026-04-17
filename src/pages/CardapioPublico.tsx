@@ -373,6 +373,33 @@ export default function CardapioPublico() {
         )}
       </div>
 
+      {/* Category nav */}
+      {categories.length > 0 && (
+        <nav className="sticky top-16 z-30 bg-white border-b border-neutral-200 mt-4">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="flex gap-2 overflow-x-auto py-3 scrollbar-thin">
+              {topShown.length > 0 && (
+                <button
+                  onClick={() => document.getElementById('section-destaques')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap"
+                >
+                  ⭐ Mais pedidos
+                </button>
+              )}
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => document.getElementById(`section-${cat.replace(/\s+/g, '-')}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </nav>
+      )}
+
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-10">
         {/* Os mais pedidos */}
         {topShown.length > 0 && (
