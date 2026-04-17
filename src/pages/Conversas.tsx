@@ -41,6 +41,7 @@ import { LeadAttachments } from "@/components/leads/LeadAttachments";
 import { ProdutoSelectorDialog } from "@/components/conversas/ProdutoSelectorDialog";
 import { VendasLeadPanel } from "@/components/conversas/VendasLeadPanel";
 import { PedidoChatModal } from "@/components/conversas/PedidoChatModal";
+import { ClienteLTVFidelidadePanel } from "@/components/conversas/ClienteLTVFidelidadePanel";
 import { PropostasBancariasPanel } from "@/components/conversas/PropostasBancariasPanel";
 import { ProcessosJuridicosPanel } from "@/components/conversas/ProcessosJuridicosPanel";
 import { isSegmentoFinanceiro, isSegmentoJuridico } from "@/lib/segmentos";
