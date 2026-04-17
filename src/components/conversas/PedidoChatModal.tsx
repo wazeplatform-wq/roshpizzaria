@@ -92,7 +92,7 @@ export function PedidoChatModal({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prodRes, cfgRes] = await Promise.all([
+      const [prodRes, cfgRes, leadRes] = await Promise.all([
         (supabase
           .from("produtos_servicos") as any)
           .select("id, nome, descricao, preco_sugerido, categoria")
@@ -105,11 +105,34 @@ export function PedidoChatModal({
           .select("*")
           .eq("company_id", companyId)
           .maybeSingle(),
+        leadId
+          ? (supabase.from("leads") as any)
+              .select("endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep")
+              .eq("id", leadId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
 
       if (prodRes.error) throw prodRes.error;
       setProducts((prodRes.data || []) as Product[]);
       setStoreConfig(cfgRes.data || {});
+
+      const leadEnd = leadRes?.data;
+      if (leadEnd && leadEnd.endereco_logradouro) {
+        setCustomer((prev) => ({
+          ...prev,
+          endereco: leadEnd.endereco_logradouro || "",
+          endereco_numero: leadEnd.endereco_numero || "",
+          endereco_complemento: leadEnd.endereco_complemento || "",
+          endereco_bairro: leadEnd.endereco_bairro || "",
+          endereco_cidade: leadEnd.endereco_cidade || "",
+          endereco_estado: leadEnd.endereco_estado || "",
+          endereco_cep: leadEnd.endereco_cep || "",
+        }));
+        setEnderecoSalvo(true);
+      } else {
+        setEnderecoSalvo(false);
+      }
     } catch (e: any) {
       console.error(e);
       toast.error("Erro ao carregar cardápio");
