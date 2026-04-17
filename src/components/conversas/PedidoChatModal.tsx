@@ -516,14 +516,76 @@ export function PedidoChatModal({
                 )}
 
                 {customer.tipo_atendimento === "entrega" && (
-                  <div className="space-y-1">
-                    <Label>Endereço de entrega</Label>
-                    <Textarea
-                      rows={2}
-                      placeholder="Rua, número, bairro, complemento, referência..."
-                      value={customer.endereco}
-                      onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
-                    />
+                  <div className="space-y-3 p-3 rounded-md border bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold">📍 Endereço de entrega</Label>
+                      {enderecoSalvo && (
+                        <Badge variant="secondary" className="text-xs">Endereço salvo do cliente</Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2 space-y-1">
+                        <Label className="text-xs">Rua / Logradouro</Label>
+                        <Input
+                          placeholder="Av. Brasil"
+                          value={customer.endereco}
+                          onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Número</Label>
+                        <Input
+                          placeholder="123"
+                          value={customer.endereco_numero}
+                          onChange={(e) => setCustomer({ ...customer, endereco_numero: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Bairro</Label>
+                        <Input
+                          placeholder="Centro"
+                          value={customer.endereco_bairro}
+                          onChange={(e) => setCustomer({ ...customer, endereco_bairro: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Complemento / Referência</Label>
+                        <Input
+                          placeholder="Apto 12, próximo ao mercado"
+                          value={customer.endereco_complemento}
+                          onChange={(e) => setCustomer({ ...customer, endereco_complemento: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Cidade</Label>
+                        <Input
+                          placeholder="São Paulo"
+                          value={customer.endereco_cidade}
+                          onChange={(e) => setCustomer({ ...customer, endereco_cidade: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">UF</Label>
+                        <Input
+                          placeholder="SP"
+                          maxLength={2}
+                          value={customer.endereco_estado}
+                          onChange={(e) => setCustomer({ ...customer, endereco_estado: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">CEP</Label>
+                        <Input
+                          placeholder="00000-000"
+                          value={customer.endereco_cep}
+                          onChange={(e) => setCustomer({ ...customer, endereco_cep: e.target.value })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
 
