@@ -812,6 +812,110 @@ export default function Pedidos() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ============ DIALOG: NOVO PEDIDO NA MESA ============ */}
+      <Dialog open={!!pedidoMesaDialog} onOpenChange={(o) => !o && setPedidoMesaDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Novo pedido — Mesa {pedidoMesaDialog?.numero}
+              {pedidoMesaDialog?.nome && ` (${pedidoMesaDialog.nome})`}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do cliente / responsável (opcional)</Label>
+              <Input
+                placeholder={`Mesa ${pedidoMesaDialog?.numero || ""}`}
+                value={mesaPedidoForm.cliente_nome}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, cliente_nome: e.target.value })}
+              />
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-3">
+              <Label className="text-sm font-semibold">Adicionar item</Label>
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-6">
+                  <Select
+                    value={mesaPedidoForm.produto_id}
+                    onValueChange={(v) => setMesaPedidoForm({ ...mesaPedidoForm, produto_id: v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Produto" /></SelectTrigger>
+                    <SelectContent>
+                      {produtos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome} — {Number(p.preco_sugerido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Qtd"
+                    value={mesaPedidoForm.quantidade}
+                    onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, quantidade: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-4">
+                  <Button onClick={addItemMesa} className="w-full" variant="secondary">
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+              <Input
+                placeholder="Observação do item (ex: sem cebola)"
+                value={mesaPedidoForm.item_obs}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, item_obs: e.target.value })}
+              />
+            </div>
+
+            {mesaPedidoForm.itens.length > 0 && (
+              <div className="rounded-lg border divide-y max-h-60 overflow-y-auto">
+                {mesaPedidoForm.itens.map((it, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 text-sm">
+                    <div className="flex-1">
+                      <div className="font-medium">{it.quantidade}x {it.nome}</div>
+                      {it.obs && <div className="text-xs text-muted-foreground">{it.obs}</div>}
+                    </div>
+                    <div className="font-semibold mr-3">
+                      {(it.preco * it.quantidade).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </div>
+                    <Button size="icon" variant="ghost" onClick={() => removeItemMesa(idx)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Observações gerais</Label>
+              <Textarea
+                value={mesaPedidoForm.observacoes}
+                onChange={(e) => setMesaPedidoForm({ ...mesaPedidoForm, observacoes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-sm text-muted-foreground">Total do pedido</span>
+              <span className="text-xl font-bold text-primary">
+                {totalMesaPedido.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPedidoMesaDialog(null)}>Cancelar</Button>
+              <Button onClick={criarPedidoMesa} disabled={saving || mesaPedidoForm.itens.length === 0}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Lançar pedido
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
