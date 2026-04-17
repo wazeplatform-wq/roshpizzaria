@@ -9386,6 +9386,18 @@ function Conversas() {
                       </DialogContent>
                     </Dialog>
                     
+                    {/* 🛒 Botão flutuante de Novo Pedido */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPedidoModalOpen(true)}
+                      className="bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 shadow-md"
+                      title="Novo Pedido (Cardápio)"
+                    >
+                      <ShoppingCart className="h-5 w-5" />
+                    </Button>
+
                     <Button onClick={() => {
                   handleSendMessage();
                   setReplyingTo(null);
@@ -9716,17 +9728,6 @@ function Conversas() {
                     }} triggerButton={<Button size="sm" variant="outline" className="w-full">
                                   <Pencil className="h-3 w-3 mr-2" /> Editar Informações
                                 </Button>} />
-                            {/* 🛒 Botão "Novo Pedido" - abre cardápio direto na conversa */}
-                            <div className="mt-3">
-                              <Button
-                                size="lg"
-                                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-md"
-                                onClick={() => setPedidoModalOpen(true)}
-                              >
-                                <ShoppingCart className="h-5 w-5 mr-2" />
-                                Novo Pedido
-                              </Button>
-                            </div>
 
                             {/* ✅ Painel de Propostas Bancárias - Apenas segmentos financeiros */}
                             {(isMasterAccount || isSegmentoFinanceiro(companySegmento)) && (
