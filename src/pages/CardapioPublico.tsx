@@ -64,7 +64,8 @@ export default function CardapioPublico() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
   const [selectedQty, setSelectedQty] = useState(1);
-  const [secondFlavor, setSecondFlavor] = useState<string>("");
+  const [extraFlavors, setExtraFlavors] = useState<string[]>([]);
+  const [selectedSize, setSelectedSize] = useState<string>("pequena");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -134,27 +135,59 @@ export default function CardapioPublico() {
   const deliveryFee = customer.tipo_atendimento === "entrega" ? Number(config.taxa_entrega || 0) : 0;
   const total = subtotal + deliveryFee;
 
+  // Configuração de tamanhos: multiplicador sobre preço base e máximo de sabores
+  const SIZE_OPTIONS = [
+    { id: "brotinho", label: "Brotinho", multiplier: 0.625, maxFlavors: 1 },
+    { id: "pequena", label: "Pequena", multiplier: 1, maxFlavors: 1 },
+    { id: "media", label: "Média", multiplier: 1.343, maxFlavors: 2 },
+    { id: "grande", label: "Grande", multiplier: 1.5, maxFlavors: 2 },
+    { id: "gigante", label: "Gigante", multiplier: 1.875, maxFlavors: 3 },
+  ];
+
+  const currentSize = useMemo(
+    () => SIZE_OPTIONS.find((s) => s.id === selectedSize) || SIZE_OPTIONS[1],
+    [selectedSize]
+  );
+
+  // Calcula o preço final de uma pizza considerando tamanho e múltiplos sabores (média)
+  const computePizzaPrice = (mainProduct: Product, extraIds: string[], sizeMultiplier: number) => {
+    const basePrices = [Number(mainProduct.preco_sugerido || 0)];
+    extraIds.forEach((id) => {
+      const flavor = products.find((p) => p.id === id);
+      if (flavor) basePrices.push(Number(flavor.preco_sugerido || 0));
+    });
+    const avg = basePrices.reduce((a, b) => a + b, 0) / basePrices.length;
+    return Math.round(avg * sizeMultiplier * 100) / 100;
+  };
+
   const addToCart = () => {
     if (!selectedProduct) return;
 
     let productToAdd: Product = selectedProduct;
     let obs = selectedObs;
+    const isPizza = !!selectedProduct.permite_meio_a_meio;
 
-    // Pizza meio a meio: combina nome dos dois sabores e usa o maior preço
-    if (selectedProduct.permite_meio_a_meio && secondFlavor) {
-      const second = products.find((p) => p.id === secondFlavor);
-      if (second) {
-        const maxPrice = Math.max(
-          Number(selectedProduct.preco_sugerido || 0),
-          Number(second.preco_sugerido || 0)
-        );
-        productToAdd = {
-          ...selectedProduct,
-          id: `${selectedProduct.id}__${second.id}`,
-          nome: `½ ${selectedProduct.nome} / ½ ${second.nome}`,
-          preco_sugerido: maxPrice,
-        };
-        obs = obs ? `Meio a meio. ${obs}` : "Meio a meio";
+    if (isPizza) {
+      const validExtras = extraFlavors.filter(Boolean).slice(0, currentSize.maxFlavors - 1);
+      const flavorObjs = validExtras
+        .map((id) => products.find((p) => p.id === id))
+        .filter((p): p is Product => !!p);
+      const finalPrice = computePizzaPrice(selectedProduct, validExtras, currentSize.multiplier);
+      const allNames = [selectedProduct.nome, ...flavorObjs.map((f) => f.nome)];
+      const totalFlavors = allNames.length;
+      const fraction = totalFlavors === 2 ? "½" : totalFlavors === 3 ? "⅓" : "";
+      const composedName =
+        totalFlavors === 1
+          ? `${selectedProduct.nome} (${currentSize.label})`
+          : `${allNames.map((n) => `${fraction} ${n}`).join(" / ")} (${currentSize.label})`;
+      productToAdd = {
+        ...selectedProduct,
+        id: `${selectedProduct.id}__${currentSize.id}__${validExtras.join("_")}`,
+        nome: composedName,
+        preco_sugerido: finalPrice,
+      };
+      if (totalFlavors > 1) {
+        obs = obs ? `${totalFlavors} sabores. ${obs}` : `${totalFlavors} sabores`;
       }
     }
 
@@ -172,7 +205,8 @@ export default function CardapioPublico() {
     setSelectedProduct(null);
     setSelectedObs("");
     setSelectedQty(1);
-    setSecondFlavor("");
+    setExtraFlavors([]);
+    setSelectedSize("pequena");
     toast.success("Item adicionado ao carrinho");
   };
 
@@ -762,10 +796,14 @@ export default function CardapioPublico() {
             </DialogHeader>
 
             {(() => {
-              const second = secondFlavor ? products.find((p) => p.id === secondFlavor) : null;
-              const finalPrice = second
-                ? Math.max(Number(selectedProduct?.preco_sugerido || 0), Number(second.preco_sugerido || 0))
-                : Number(selectedProduct?.preco_sugerido || 0);
+              if (!selectedProduct) return null;
+              const isPizza = !!selectedProduct.permite_meio_a_meio;
+              const validExtras = isPizza
+                ? extraFlavors.filter(Boolean).slice(0, currentSize.maxFlavors - 1)
+                : [];
+              const finalPrice = isPizza
+                ? computePizzaPrice(selectedProduct, validExtras, currentSize.multiplier)
+                : Number(selectedProduct.preco_sugerido || 0);
               return (
                 <div className="text-lg font-bold" style={{ color: primary }}>
                   {formatBRL(finalPrice)}
@@ -774,34 +812,83 @@ export default function CardapioPublico() {
             })()}
 
             {selectedProduct?.permite_meio_a_meio && (
-              <div className="space-y-1.5 rounded-lg border border-dashed p-3" style={{ borderColor: primary }}>
-                <Label className="font-semibold" style={{ color: primary }}>
-                  🍕 Pizza meio a meio (opcional)
-                </Label>
-                <p className="text-xs text-neutral-500">
-                  Escolha um segundo sabor. O valor cobrado será o do sabor mais caro.
-                </p>
-                <Select value={secondFlavor || "none"} onValueChange={(v) => setSecondFlavor(v === "none" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar 2º sabor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Pizza inteira —</SelectItem>
-                    {products
-                      .filter(
-                        (p) =>
-                          p.permite_meio_a_meio &&
-                          p.id !== selectedProduct.id &&
-                          (p.categoria || "") === (selectedProduct.categoria || "")
-                      )
-                      .map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.nome} — {formatBRL(p.preco_sugerido)}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-1.5 rounded-lg border border-dashed p-3" style={{ borderColor: primary }}>
+                  <Label className="font-semibold" style={{ color: primary }}>
+                    📏 Tamanho da pizza
+                  </Label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {SIZE_OPTIONS.map((size) => {
+                      const price = computePizzaPrice(selectedProduct, [], size.multiplier);
+                      const active = selectedSize === size.id;
+                      return (
+                        <button
+                          key={size.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSize(size.id);
+                            setExtraFlavors((prev) => prev.slice(0, size.maxFlavors - 1));
+                          }}
+                          className={`rounded-lg border-2 px-1 py-2 text-center transition ${
+                            active ? "shadow-md" : "border-neutral-200 hover:border-neutral-300"
+                          }`}
+                          style={active ? { borderColor: primary, backgroundColor: `${primary}15` } : {}}
+                        >
+                          <div className="text-[11px] font-bold leading-tight">{size.label}</div>
+                          <div className="text-[10px] text-neutral-500">{size.maxFlavors} sabor{size.maxFlavors > 1 ? "es" : ""}</div>
+                          <div className="text-[11px] font-semibold mt-0.5" style={{ color: primary }}>
+                            {formatBRL(price)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {currentSize.maxFlavors > 1 && (
+                  <div className="space-y-2 rounded-lg border border-dashed p-3" style={{ borderColor: primary }}>
+                    <Label className="font-semibold" style={{ color: primary }}>
+                      🍕 Sabores adicionais (até {currentSize.maxFlavors - 1})
+                    </Label>
+                    <p className="text-xs text-neutral-500">
+                      O preço final é a média dos sabores escolhidos.
+                    </p>
+                    {Array.from({ length: currentSize.maxFlavors - 1 }).map((_, idx) => (
+                      <Select
+                        key={idx}
+                        value={extraFlavors[idx] || "none"}
+                        onValueChange={(v) =>
+                          setExtraFlavors((prev) => {
+                            const next = [...prev];
+                            next[idx] = v === "none" ? "" : v;
+                            return next;
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Sabor extra ${idx + 2}`} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          <SelectItem value="none">— Sem este sabor —</SelectItem>
+                          {products
+                            .filter(
+                              (p) =>
+                                p.permite_meio_a_meio &&
+                                p.id !== selectedProduct.id &&
+                                !extraFlavors.filter((_, i) => i !== idx).includes(p.id) &&
+                                (p.categoria || "") === (selectedProduct.categoria || "")
+                            )
+                            .map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.nome}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             <div className="space-y-1.5">
@@ -824,10 +911,14 @@ export default function CardapioPublico() {
                 </Button>
               </div>
               {(() => {
-                const second = secondFlavor ? products.find((p) => p.id === secondFlavor) : null;
-                const finalPrice = second
-                  ? Math.max(Number(selectedProduct?.preco_sugerido || 0), Number(second.preco_sugerido || 0))
-                  : Number(selectedProduct?.preco_sugerido || 0);
+                if (!selectedProduct) return null;
+                const isPizza = !!selectedProduct.permite_meio_a_meio;
+                const validExtras = isPizza
+                  ? extraFlavors.filter(Boolean).slice(0, currentSize.maxFlavors - 1)
+                  : [];
+                const finalPrice = isPizza
+                  ? computePizzaPrice(selectedProduct, validExtras, currentSize.multiplier)
+                  : Number(selectedProduct.preco_sugerido || 0);
                 return (
                   <Button
                     className="text-white font-semibold"
