@@ -86,11 +86,28 @@ serve(async (req) => {
         .eq("ativo", true)
         .order("ordem");
 
+      const { data: pizzaBordas } = await supabase
+        .from("pizza_bordas")
+        .select("id, nome, descricao, ordem")
+        .eq("company_id", store.company_id)
+        .eq("ativo", true)
+        .order("ordem");
+
+      const bordaIds = (pizzaBordas || []).map((b: any) => b.id);
+      const { data: pizzaBordaPrecos } = bordaIds.length
+        ? await supabase
+            .from("pizza_borda_precos")
+            .select("borda_id, tamanho_id, preco")
+            .in("borda_id", bordaIds)
+        : { data: [] };
+
       return new Response(JSON.stringify({
         success: true,
         store,
         products: products || [],
         pizzaSizes: pizzaSizes || [],
+        pizzaBordas: pizzaBordas || [],
+        pizzaBordaPrecos: pizzaBordaPrecos || [],
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

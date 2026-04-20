@@ -63,6 +63,11 @@ export default function CardapioPublico() {
   const [config, setConfig] = useState<StoreConfig>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [pizzaSizes, setPizzaSizes] = useState<Array<{ id: string; nome: string; slug: string; multiplicador: number; max_sabores: number; fatias: number; descricao?: string | null }>>([]);
+  const [pizzaBordas, setPizzaBordas] = useState<Array<{ id: string; nome: string; descricao?: string | null; ordem?: number }>>([]);
+  const [pizzaBordaPrecos, setPizzaBordaPrecos] = useState<Array<{ borda_id: string; tamanho_id: string; preco: number }>>([]);
+  const [selectedBordaId, setSelectedBordaId] = useState<string>("");
+  const [drinkSuggestionOpen, setDrinkSuggestionOpen] = useState(false);
+  const [skipDrinkPromptAtCheckout, setSkipDrinkPromptAtCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
@@ -100,6 +105,8 @@ export default function CardapioPublico() {
         setConfig(data.store || {});
         setProducts(data.products || []);
         setPizzaSizes(data.pizzaSizes || []);
+        setPizzaBordas(data.pizzaBordas || []);
+        setPizzaBordaPrecos(data.pizzaBordaPrecos || []);
       } catch (error) {
         console.error(error);
         setNotFound(true);
@@ -162,6 +169,7 @@ export default function CardapioPublico() {
     if (pizzaSizes.length > 0) {
       return pizzaSizes.map((s) => ({
         id: s.slug,
+        tamanhoId: s.id,
         label: s.nome,
         multiplier: Number(s.multiplicador) || 1,
         maxFlavors: s.max_sabores || 1,
@@ -169,7 +177,7 @@ export default function CardapioPublico() {
         descricao: s.descricao || "",
       }));
     }
-    return DEFAULT_SIZES;
+    return DEFAULT_SIZES.map((d) => ({ ...d, tamanhoId: "" }));
   }, [pizzaSizes]);
 
   useEffect(() => {
@@ -178,6 +186,7 @@ export default function CardapioPublico() {
     if (isPizzaProduct(selectedProduct)) {
       setSelectedSize("");
       setExtraFlavors([]);
+      setSelectedBordaId("");
       return;
     }
 
@@ -194,6 +203,34 @@ export default function CardapioPublico() {
   const selectedPizzaSize = selectedSize
     ? SIZE_OPTIONS.find((s) => s.id === selectedSize)
     : undefined;
+
+  const getBordaPriceForSize = (bordaId: string, tamanhoId: string) => {
+    const p = pizzaBordaPrecos.find((x) => x.borda_id === bordaId && x.tamanho_id === tamanhoId);
+    return Number(p?.preco || 0);
+  };
+
+  const selectedBorda = pizzaBordas.find((b) => b.id === selectedBordaId);
+  const selectedBordaPrice = selectedBorda && selectedPizzaSize?.tamanhoId
+    ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId)
+    : 0;
+
+  // Lista de bebidas disponíveis (categoria contém "bebida" ou "bebidas")
+  const drinkProducts = useMemo(
+    () => products.filter((p) => {
+      const cat = (p.categoria || "").toLowerCase();
+      return cat.includes("bebida");
+    }),
+    [products]
+  );
+
+  // Determina se o carrinho contém bebida
+  const cartHasDrink = useMemo(
+    () => cart.some((item) => {
+      const cat = (item.product.categoria || "").toLowerCase();
+      return cat.includes("bebida");
+    }),
+    [cart]
+  );
 
   // Calcula o preço final de uma pizza considerando tamanho e múltiplos sabores (média)
   const computePizzaPrice = (mainProduct: Product, extraIds: string[], sizeMultiplier: number) => {
@@ -223,22 +260,30 @@ export default function CardapioPublico() {
       const flavorObjs = validExtras
         .map((id) => products.find((p) => p.id === id))
         .filter((p): p is Product => !!p);
-      const finalPrice = computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier);
+      const basePrice = computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier);
+      const bordaPrice = selectedBorda && selectedPizzaSize.tamanhoId
+        ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId)
+        : 0;
+      const finalPrice = Math.round((basePrice + bordaPrice) * 100) / 100;
       const allNames = [selectedProduct.nome, ...flavorObjs.map((f) => f.nome)];
       const totalFlavors = allNames.length;
       const fraction = totalFlavors === 2 ? "½" : totalFlavors === 3 ? "⅓" : "";
-      const composedName =
+      const baseName =
         totalFlavors === 1
           ? `${selectedProduct.nome} (${selectedPizzaSize.label})`
           : `${allNames.map((n) => `${fraction} ${n}`).join(" / ")} (${selectedPizzaSize.label})`;
+      const composedName = selectedBorda ? `${baseName} • Borda ${selectedBorda.nome}` : baseName;
       productToAdd = {
         ...selectedProduct,
-        id: `${selectedProduct.id}__${selectedPizzaSize.id}__${validExtras.join("_")}`,
+        id: `${selectedProduct.id}__${selectedPizzaSize.id}__${validExtras.join("_")}__${selectedBorda?.id || "noborda"}`,
         nome: composedName,
         preco_sugerido: finalPrice,
       };
       if (totalFlavors > 1) {
         obs = obs ? `${totalFlavors} sabores. ${obs}` : `${totalFlavors} sabores`;
+      }
+      if (selectedBorda) {
+        obs = obs ? `Borda ${selectedBorda.nome}. ${obs}` : `Borda ${selectedBorda.nome}`;
       }
     }
 
@@ -253,12 +298,18 @@ export default function CardapioPublico() {
       }
       return [...prev, { product: productToAdd, quantity: selectedQty, observations: obs.trim() }];
     });
+    const wasPizza = isPizzaProduct(selectedProduct);
     setSelectedProduct(null);
     setSelectedObs("");
     setSelectedQty(1);
     setExtraFlavors([]);
     setSelectedSize("");
+    setSelectedBordaId("");
     toast.success("Item adicionado ao carrinho");
+    // Sugerir bebida quando adicionar pizza e ainda não há bebida no carrinho
+    if (wasPizza && drinkProducts.length > 0 && !cartHasDrink) {
+      setTimeout(() => setDrinkSuggestionOpen(true), 300);
+    }
   };
 
   const updateQuantity = (index: number, delta: number) => {
