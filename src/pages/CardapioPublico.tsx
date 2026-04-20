@@ -139,18 +139,39 @@ export default function CardapioPublico() {
   const deliveryFee = customer.tipo_atendimento === "entrega" ? Number(config.taxa_entrega || 0) : 0;
   const total = subtotal + deliveryFee;
 
-  // Configuração de tamanhos: multiplicador sobre preço base e máximo de sabores
-  const SIZE_OPTIONS = [
-    { id: "brotinho", label: "Brotinho", multiplier: 0.625, maxFlavors: 1, slices: 1 },
-    { id: "pequena", label: "Pequena", multiplier: 1, maxFlavors: 2, slices: 4 },
-    { id: "media", label: "Média", multiplier: 1.343, maxFlavors: 2, slices: 6 },
-    { id: "grande", label: "Grande", multiplier: 1.5, maxFlavors: 3, slices: 8 },
-    { id: "gigante", label: "Gigante", multiplier: 1.875, maxFlavors: 3, slices: 12 },
+  // Tamanhos vindos do banco; fallback para defaults se a empresa não cadastrou nenhum
+  const DEFAULT_SIZES = [
+    { id: "brotinho", label: "Brotinho", multiplier: 0.625, maxFlavors: 1, slices: 1, descricao: "Pizza com 1 sabor e 1 fatia" },
+    { id: "pequena", label: "Pequena", multiplier: 1, maxFlavors: 2, slices: 4, descricao: "Pizza com até 2 sabores e 4 fatias" },
+    { id: "media", label: "Média", multiplier: 1.343, maxFlavors: 2, slices: 6, descricao: "Pizza com até 2 sabores e 6 fatias" },
+    { id: "grande", label: "Grande", multiplier: 1.5, maxFlavors: 3, slices: 8, descricao: "Pizza com até 3 sabores e 8 fatias" },
+    { id: "gigante", label: "Gigante", multiplier: 1.875, maxFlavors: 3, slices: 12, descricao: "Pizza com até 3 sabores e 12 fatias" },
   ];
 
+  const SIZE_OPTIONS = useMemo(() => {
+    if (pizzaSizes.length > 0) {
+      return pizzaSizes.map((s) => ({
+        id: s.slug,
+        label: s.nome,
+        multiplier: Number(s.multiplicador) || 1,
+        maxFlavors: s.max_sabores || 1,
+        slices: s.fatias || 1,
+        descricao: s.descricao || "",
+      }));
+    }
+    return DEFAULT_SIZES;
+  }, [pizzaSizes]);
+
+  useEffect(() => {
+    if (SIZE_OPTIONS.length > 0 && !SIZE_OPTIONS.find((s) => s.id === selectedSize)) {
+      // seleciona o segundo (geralmente "Pequena") ou o primeiro disponível
+      setSelectedSize(SIZE_OPTIONS[Math.min(1, SIZE_OPTIONS.length - 1)].id);
+    }
+  }, [SIZE_OPTIONS, selectedSize]);
+
   const currentSize = useMemo(
-    () => SIZE_OPTIONS.find((s) => s.id === selectedSize) || SIZE_OPTIONS[1],
-    [selectedSize]
+    () => SIZE_OPTIONS.find((s) => s.id === selectedSize) || SIZE_OPTIONS[0],
+    [SIZE_OPTIONS, selectedSize]
   );
 
   // Calcula o preço final de uma pizza considerando tamanho e múltiplos sabores (média)
