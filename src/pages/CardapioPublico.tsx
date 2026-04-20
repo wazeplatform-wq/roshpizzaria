@@ -63,6 +63,11 @@ export default function CardapioPublico() {
   const [config, setConfig] = useState<StoreConfig>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [pizzaSizes, setPizzaSizes] = useState<Array<{ id: string; nome: string; slug: string; multiplicador: number; max_sabores: number; fatias: number; descricao?: string | null }>>([]);
+  const [pizzaBordas, setPizzaBordas] = useState<Array<{ id: string; nome: string; descricao?: string | null; ordem?: number }>>([]);
+  const [pizzaBordaPrecos, setPizzaBordaPrecos] = useState<Array<{ borda_id: string; tamanho_id: string; preco: number }>>([]);
+  const [selectedBordaId, setSelectedBordaId] = useState<string>("");
+  const [drinkSuggestionOpen, setDrinkSuggestionOpen] = useState(false);
+  const [skipDrinkPromptAtCheckout, setSkipDrinkPromptAtCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
@@ -100,6 +105,8 @@ export default function CardapioPublico() {
         setConfig(data.store || {});
         setProducts(data.products || []);
         setPizzaSizes(data.pizzaSizes || []);
+        setPizzaBordas(data.pizzaBordas || []);
+        setPizzaBordaPrecos(data.pizzaBordaPrecos || []);
       } catch (error) {
         console.error(error);
         setNotFound(true);
