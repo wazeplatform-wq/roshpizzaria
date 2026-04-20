@@ -528,6 +528,10 @@ export default function Produtos() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="tamanhos" className="space-y-4">
+          <PizzaTamanhosManager />
+        </TabsContent>
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
