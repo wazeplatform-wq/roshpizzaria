@@ -398,6 +398,7 @@ export default function Produtos() {
           <TabsTrigger value="adicional">Adicionais</TabsTrigger>
           <TabsTrigger value="insumo">Insumos</TabsTrigger>
           <TabsTrigger value="opcoes">Grupos e opções</TabsTrigger>
+          <TabsTrigger value="tamanhos"><Pizza className="h-4 w-4 mr-1" /> Tamanhos de Pizza</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tipoTab} className="space-y-4">
