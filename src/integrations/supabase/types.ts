@@ -4651,6 +4651,89 @@ export type Database = {
           },
         ]
       }
+      pizza_borda_precos: {
+        Row: {
+          borda_id: string
+          created_at: string
+          id: string
+          preco: number
+          tamanho_id: string
+          updated_at: string
+        }
+        Insert: {
+          borda_id: string
+          created_at?: string
+          id?: string
+          preco?: number
+          tamanho_id: string
+          updated_at?: string
+        }
+        Update: {
+          borda_id?: string
+          created_at?: string
+          id?: string
+          preco?: number
+          tamanho_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pizza_borda_precos_borda_id_fkey"
+            columns: ["borda_id"]
+            isOneToOne: false
+            referencedRelation: "pizza_bordas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pizza_borda_precos_tamanho_id_fkey"
+            columns: ["tamanho_id"]
+            isOneToOne: false
+            referencedRelation: "pizza_tamanhos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pizza_bordas: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pizza_bordas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pizza_tamanhos: {
         Row: {
           ativo: boolean
