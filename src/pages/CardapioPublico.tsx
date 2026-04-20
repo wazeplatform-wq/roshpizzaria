@@ -162,6 +162,7 @@ export default function CardapioPublico() {
     if (pizzaSizes.length > 0) {
       return pizzaSizes.map((s) => ({
         id: s.slug,
+        tamanhoId: s.id,
         label: s.nome,
         multiplier: Number(s.multiplicador) || 1,
         maxFlavors: s.max_sabores || 1,
@@ -169,7 +170,7 @@ export default function CardapioPublico() {
         descricao: s.descricao || "",
       }));
     }
-    return DEFAULT_SIZES;
+    return DEFAULT_SIZES.map((d) => ({ ...d, tamanhoId: "" }));
   }, [pizzaSizes]);
 
   useEffect(() => {
@@ -178,6 +179,7 @@ export default function CardapioPublico() {
     if (isPizzaProduct(selectedProduct)) {
       setSelectedSize("");
       setExtraFlavors([]);
+      setSelectedBordaId("");
       return;
     }
 
@@ -194,6 +196,34 @@ export default function CardapioPublico() {
   const selectedPizzaSize = selectedSize
     ? SIZE_OPTIONS.find((s) => s.id === selectedSize)
     : undefined;
+
+  const getBordaPriceForSize = (bordaId: string, tamanhoId: string) => {
+    const p = pizzaBordaPrecos.find((x) => x.borda_id === bordaId && x.tamanho_id === tamanhoId);
+    return Number(p?.preco || 0);
+  };
+
+  const selectedBorda = pizzaBordas.find((b) => b.id === selectedBordaId);
+  const selectedBordaPrice = selectedBorda && selectedPizzaSize?.tamanhoId
+    ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId)
+    : 0;
+
+  // Lista de bebidas disponíveis (categoria contém "bebida" ou "bebidas")
+  const drinkProducts = useMemo(
+    () => products.filter((p) => {
+      const cat = (p.categoria || "").toLowerCase();
+      return cat.includes("bebida");
+    }),
+    [products]
+  );
+
+  // Determina se o carrinho contém bebida
+  const cartHasDrink = useMemo(
+    () => cart.some((item) => {
+      const cat = (item.product.categoria || "").toLowerCase();
+      return cat.includes("bebida");
+    }),
+    [cart]
+  );
 
   // Calcula o preço final de uma pizza considerando tamanho e múltiplos sabores (média)
   const computePizzaPrice = (mainProduct: Product, extraIds: string[], sizeMultiplier: number) => {
