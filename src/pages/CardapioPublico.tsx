@@ -60,12 +60,13 @@ export default function CardapioPublico() {
   const [notFound, setNotFound] = useState(false);
   const [config, setConfig] = useState<StoreConfig>({});
   const [products, setProducts] = useState<Product[]>([]);
+  const [pizzaSizes, setPizzaSizes] = useState<Array<{ id: string; nome: string; slug: string; multiplicador: number; max_sabores: number; fatias: number; descricao?: string | null }>>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
   const [selectedQty, setSelectedQty] = useState(1);
   const [extraFlavors, setExtraFlavors] = useState<string[]>([]);
-  const [selectedSize, setSelectedSize] = useState<string>("pequena");
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const PREVIEW_LIMIT = 4;
   const [search, setSearch] = useState("");
