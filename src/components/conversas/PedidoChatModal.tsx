@@ -470,6 +470,72 @@ export function PedidoChatModal({
         descricao: "Pedido criado pelo atendente via chat",
       });
 
+      // 🍕 Acumular selos no cartão fidelidade (1 selo por pizza)
+      try {
+        const pizzasQty = cart.reduce((acc, i) => {
+          const isPz =
+            !!i.product.permite_meio_a_meio ||
+            (i.product.nome || "").toLowerCase().includes("pizza") ||
+            (i.product.categoria || "").toLowerCase().includes("pizza");
+          return acc + (isPz ? i.quantity : 0);
+        }, 0);
+
+        if (pizzasQty > 0 && leadId) {
+          const { data: existingCard } = await (supabase.from("loyalty_cards" as any) as any)
+            .select("selos_atuais, total_premios_resgatados")
+            .eq("company_id", companyId)
+            .eq("lead_id", leadId)
+            .maybeSingle();
+
+          const currentStamps = (existingCard as any)?.selos_atuais || 0;
+          const totalRedeemed = (existingCard as any)?.total_premios_resgatados || 0;
+
+          await (supabase.from("loyalty_cards" as any) as any).upsert(
+            {
+              company_id: companyId,
+              lead_id: leadId,
+              selos_atuais: currentStamps + pizzasQty,
+              total_premios_resgatados: totalRedeemed,
+              ultimo_selo_em: new Date().toISOString(),
+            },
+            { onConflict: "company_id,lead_id" }
+          );
+        }
+      } catch (loyaltyErr) {
+        console.error("Erro ao acumular selos fidelidade:", loyaltyErr);
+      }
+
+      // 📲 Enviar mensagem de confirmação via WhatsApp
+      try {
+        const telefoneEnvio = String(customer.telefone || "").replace(/\D/g, "");
+        if (telefoneEnvio.length >= 10) {
+          const itensTexto = cart
+            .map(
+              (it) =>
+                `• ${it.quantity}x ${it.product.nome} - ${formatBRL(
+                  Number(it.product.preco_sugerido || 0) * it.quantity
+                )}`
+            )
+            .join("\n");
+          const tipoAtend = customer.tipo_atendimento === "entrega" ? "🛵 Entrega" : "🏠 Retirada";
+          const enderecoLinha = customer.endereco ? `\n📍 *Endereço:* ${customer.endereco}` : "";
+          const taxaLinha = deliveryFee > 0 ? `\nTaxa de entrega: ${formatBRL(deliveryFee)}` : "";
+          const nomeLoja = storeConfig?.nome_loja || "nossa loja";
+          const mensagem = `🍕 *Pedido confirmado!*\n\nOlá ${customer.nome}, recebemos seu pedido *${pedidoData.codigo_pedido}* na ${nomeLoja}.\n\n*Itens:*\n${itensTexto}\n\nSubtotal: ${formatBRL(subtotal)}${taxaLinha}\n*Total: ${formatBRL(total)}*\n\n${tipoAtend}\n💳 *Pagamento:* ${customer.forma_pagamento}${enderecoLinha}\n\nObrigado pela preferência! 🧡`;
+
+          await supabase.functions.invoke("enviar-whatsapp", {
+            body: {
+              companyId,
+              numero: telefoneEnvio,
+              mensagem,
+              origem: "chat-pedido",
+            },
+          });
+        }
+      } catch (msgErr) {
+        console.error("Erro ao enviar confirmação WhatsApp:", msgErr);
+      }
+
       toast.success(`Pedido ${pedidoData.codigo_pedido || ""} criado e enviado para Gestão de Pedidos!`);
       onOpenChange(false);
     } catch (e: any) {
