@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Loader2, Plus, Minus, Search, Share2, Home, ClipboardList, ShoppingCart, UtensilsCrossed, X, Instagram, MapPin, MessageCircle, ChevronDown, ChevronUp, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Plus, Minus, Search, Share2, Home, ClipboardList, ShoppingCart, UtensilsCrossed, X, Instagram, MapPin, MessageCircle, ChevronDown, ChevronUp, Check, ChevronsUpDown, User, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = {
@@ -81,14 +81,37 @@ export default function CardapioPublico() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const [customer, setCustomer] = useState({
-    nome: "",
-    telefone: "",
-    tipo_atendimento: "entrega",
-    forma_pagamento: "pix",
-    observacoes: "",
-    endereco: "",
+  const CUSTOMER_STORAGE_KEY = `cardapio_customer_${slug || "default"}`;
+
+  const [customer, setCustomer] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`cardapio_customer_${slug || "default"}`) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          nome: parsed.nome || "",
+          telefone: parsed.telefone || "",
+          tipo_atendimento: parsed.tipo_atendimento || "entrega",
+          forma_pagamento: parsed.forma_pagamento || "pix",
+          observacoes: "",
+          endereco: parsed.endereco || "",
+        };
+      }
+    } catch {/* ignore */}
+    return {
+      nome: "",
+      telefone: "",
+      tipo_atendimento: "entrega",
+      forma_pagamento: "pix",
+      observacoes: "",
+      endereco: "",
+    };
   });
+
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountData, setAccountData] = useState<{ pedidos: number; total: number; pontos: number } | null>(null);
+  const isLogged = !!(customer.nome && customer.telefone);
 
   useEffect(() => {
     const load = async () => {
@@ -357,16 +380,20 @@ export default function CardapioPublico() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Falha ao criar pedido");
       toast.success(`Pedido enviado com sucesso! Código ${data.codigo_pedido}`);
+      // Salvar dados do cliente para próximos pedidos (sem email, simples)
+      try {
+        localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+          nome: customer.nome,
+          telefone: customer.telefone,
+          tipo_atendimento: customer.tipo_atendimento,
+          forma_pagamento: customer.forma_pagamento,
+          endereco: customer.endereco,
+        }));
+      } catch {/* ignore */}
       setCart([]);
       setCartOpen(false);
-      setCustomer({
-        nome: "",
-        telefone: "",
-        tipo_atendimento: "entrega",
-        forma_pagamento: "pix",
-        observacoes: "",
-        endereco: "",
-      });
+      // Mantém nome, telefone, endereço; limpa apenas observações
+      setCustomer((prev) => ({ ...prev, observacoes: "" }));
     } catch (error: any) {
       console.error(error);
       toast.error(error?.message || "Erro ao enviar pedido");
@@ -388,6 +415,45 @@ export default function CardapioPublico() {
       /* noop */
     }
   };
+
+  const openAccount = async () => {
+    setAccountOpen(true);
+    if (!customer.telefone) return;
+    setAccountLoading(true);
+    try {
+      const { data } = await supabase.functions.invoke("api-public-pedidos", {
+        body: { action: "customer", slug, telefone: customer.telefone },
+      });
+      if (data?.success) {
+        const total = Number(data.total || 0);
+        setAccountData({
+          pedidos: Number(data.pedidos || 0),
+          total,
+          pontos: Math.floor(total / 10), // 1 ponto a cada R$10
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAccountLoading(false);
+    }
+  };
+
+  const logoutAccount = () => {
+    try { localStorage.removeItem(CUSTOMER_STORAGE_KEY); } catch {/* ignore */}
+    setCustomer({
+      nome: "",
+      telefone: "",
+      tipo_atendimento: "entrega",
+      forma_pagamento: "pix",
+      observacoes: "",
+      endereco: "",
+    });
+    setAccountData(null);
+    setAccountOpen(false);
+    toast.success("Cadastro removido deste dispositivo");
+  };
+
 
   if (loading) {
     return (
@@ -463,6 +529,14 @@ export default function CardapioPublico() {
             className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition"
           >
             <Share2 className="h-5 w-5" />
+          </button>
+          <button
+            aria-label="Minha conta"
+            onClick={openAccount}
+            className="h-9 px-3 rounded-full hover:bg-white/15 flex items-center gap-1.5 transition text-sm font-medium"
+          >
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">{isLogged ? customer.nome.split(" ")[0] : "Entrar"}</span>
           </button>
         </div>
         {searchOpen && (
@@ -1137,6 +1211,150 @@ export default function CardapioPublico() {
               );
             })()}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Minha Conta Dialog */}
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent className="max-w-md w-[calc(100%-1rem)] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" style={{ color: primary }} />
+              {isLogged ? "Minha conta" : "Meu cadastro"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {!isLogged ? (
+            <div className="space-y-3 pt-2">
+              <p className="text-sm text-neutral-600">
+                Faça um cadastro rápido para acumular pontos e não digitar seus dados a cada pedido.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Nome</Label>
+                <Input
+                  value={customer.nome}
+                  onChange={(e) => setCustomer({ ...customer, nome: e.target.value })}
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>WhatsApp</Label>
+                <Input
+                  inputMode="tel"
+                  value={customer.telefone}
+                  onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Endereço de entrega</Label>
+                <Textarea
+                  rows={2}
+                  value={customer.endereco}
+                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
+                  placeholder="Rua, número, bairro, referência"
+                />
+              </div>
+              <Button
+                className="w-full h-11 text-white font-semibold"
+                style={{ backgroundColor: primary }}
+                onClick={() => {
+                  if (!customer.nome.trim() || !customer.telefone.trim()) {
+                    toast.error("Informe nome e WhatsApp");
+                    return;
+                  }
+                  try {
+                    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                      nome: customer.nome,
+                      telefone: customer.telefone,
+                      tipo_atendimento: customer.tipo_atendimento,
+                      forma_pagamento: customer.forma_pagamento,
+                      endereco: customer.endereco,
+                    }));
+                  } catch {/* ignore */}
+                  toast.success("Cadastro salvo!");
+                  openAccount();
+                }}
+              >
+                Salvar cadastro
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2">
+              <div
+                className="rounded-2xl p-4 text-white"
+                style={{ background: `linear-gradient(135deg, ${primary}, ${primary}cc)` }}
+              >
+                <div className="flex items-center gap-2 text-sm opacity-90">
+                  <Star className="h-4 w-4 fill-current" />
+                  Programa de fidelidade
+                </div>
+                <div className="mt-2 text-3xl font-extrabold">
+                  {accountLoading ? "…" : (accountData?.pontos ?? 0)} <span className="text-base font-medium opacity-90">pontos</span>
+                </div>
+                <div className="text-xs opacity-90 mt-1">
+                  {accountLoading
+                    ? "Carregando..."
+                    : `${accountData?.pedidos ?? 0} pedido(s) • ${formatBRL(accountData?.total ?? 0)} acumulados`}
+                </div>
+                <div className="text-[11px] opacity-80 mt-2">A cada R$ 10,00 em pedidos você ganha 1 ponto.</div>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Nome</span>
+                  <span className="font-medium text-neutral-900">{customer.nome}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">WhatsApp</span>
+                  <span className="font-medium text-neutral-900">{customer.telefone}</span>
+                </div>
+                {customer.endereco && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-neutral-500 shrink-0">Endereço</span>
+                    <span className="font-medium text-neutral-900 text-right">{customer.endereco}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-neutral-500">Editar endereço de entrega</Label>
+                <Textarea
+                  rows={2}
+                  value={customer.endereco}
+                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                        nome: customer.nome,
+                        telefone: customer.telefone,
+                        tipo_atendimento: customer.tipo_atendimento,
+                        forma_pagamento: customer.forma_pagamento,
+                        endereco: customer.endereco,
+                      }));
+                      toast.success("Dados atualizados");
+                    } catch {/* ignore */}
+                  }}
+                >
+                  Atualizar dados
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={logoutAccount}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair deste dispositivo
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
