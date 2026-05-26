@@ -88,8 +88,8 @@ export default function IA() {
   const aiAgents = [
     {
       id: "atendimento",
-      name: "IA de Atendimento",
-      description: "Pré-atendimento, qualificação, vendas, suporte e gestão de leads",
+      name: "Atendente Digital",
+      description: "Recepciona clientes, tira dúvidas e anota pedidos",
       icon: Bot,
       color: "bg-blue-500",
       active: agentStates.atendimento,
