@@ -81,14 +81,37 @@ export default function CardapioPublico() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const [customer, setCustomer] = useState({
-    nome: "",
-    telefone: "",
-    tipo_atendimento: "entrega",
-    forma_pagamento: "pix",
-    observacoes: "",
-    endereco: "",
+  const CUSTOMER_STORAGE_KEY = `cardapio_customer_${slug || "default"}`;
+
+  const [customer, setCustomer] = useState(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`cardapio_customer_${slug || "default"}`) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          nome: parsed.nome || "",
+          telefone: parsed.telefone || "",
+          tipo_atendimento: parsed.tipo_atendimento || "entrega",
+          forma_pagamento: parsed.forma_pagamento || "pix",
+          observacoes: "",
+          endereco: parsed.endereco || "",
+        };
+      }
+    } catch {/* ignore */}
+    return {
+      nome: "",
+      telefone: "",
+      tipo_atendimento: "entrega",
+      forma_pagamento: "pix",
+      observacoes: "",
+      endereco: "",
+    };
   });
+
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountData, setAccountData] = useState<{ pedidos: number; total: number; pontos: number } | null>(null);
+  const isLogged = !!(customer.nome && customer.telefone);
 
   useEffect(() => {
     const load = async () => {
