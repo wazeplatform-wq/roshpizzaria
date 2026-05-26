@@ -264,8 +264,8 @@ export default function Pedidos() {
         status: nextStatus,
         descricao: `Status alterado para ${STATUS_LABELS[nextStatus]}${tempoMin ? ` (tempo estimado: ${tempoMin} min)` : ""}`,
       });
-      // Envia notificação ao cliente via WhatsApp
-      sendWhatsAppStatusMessage(pedido, nextStatus, tempoMin);
+      // Envia notificação ao cliente via WhatsApp (aguarda para garantir envio)
+      await sendWhatsAppStatusMessage(pedido, nextStatus, tempoMin);
       toast.success(`Pedido movido para ${STATUS_LABELS[nextStatus]}`);
       await load();
     } catch {
