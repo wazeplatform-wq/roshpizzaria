@@ -88,8 +88,8 @@ export default function IA() {
   const aiAgents = [
     {
       id: "atendimento",
-      name: "IA de Atendimento",
-      description: "Pré-atendimento, qualificação, vendas, suporte e gestão de leads",
+      name: "Atendente Digital",
+      description: "Recepciona clientes, tira dúvidas e anota pedidos",
       icon: Bot,
       color: "bg-blue-500",
       active: agentStates.atendimento,
@@ -101,8 +101,8 @@ export default function IA() {
     },
     {
       id: "agendamento",
-      name: "IA de Agendamento",
-      description: "Agenda, remarca e cancela compromissos automaticamente",
+      name: "Agente de Reservas",
+      description: "Gerencia reservas de mesas e horários automaticamente",
       icon: Target,
       color: "bg-emerald-500",
       active: agentStates.agendamento ?? true,
@@ -118,7 +118,7 @@ export default function IA() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
         <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Fluxos e Automação com IA
+          Fluxos e Automação Inteligente
         </h1>
         <p className="text-muted-foreground text-lg">
           Agentes inteligentes, automações e campanhas

@@ -643,7 +643,7 @@ export default function Configuracoes() {
                 <AlertDialogDescription>
                   Tem certeza que deseja excluir o usuário <strong>{colaboradorParaExcluir?.nome}</strong>?
                   <br /><br />
-                  Esta ação irá remover o acesso do usuário à empresa. Se o usuário não estiver vinculado a outras empresas, ele será completamente excluído do sistema.
+                  Esta ação irá remover o acesso do usuário à empresa. Se o usuário não estiver vinculado a outras empresas, ele será completamente removido do sistema.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -739,7 +739,7 @@ export default function Configuracoes() {
                     Acesso total ao sistema, incluindo gestão de subcontas e todas as funcionalidades.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: Todas ({permissions.length} permissões)
+                    Acesso total ({permissions.length} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4 bg-blue-500/5 border-blue-500/20">
@@ -750,7 +750,7 @@ export default function Configuracoes() {
                     Acesso total à sua empresa, gestão de usuários e configurações.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['company_admin']?.length || 0} permissões
+                    Acesso administrador ({rolePermissions['company_admin']?.length || 0} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4">
@@ -761,7 +761,7 @@ export default function Configuracoes() {
                     Acesso a relatórios, leads, funis e conversas. Pode visualizar métricas da equipe.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['gestor']?.length || 0} permissões
+                    Acesso gerencial ({rolePermissions['gestor']?.length || 0} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4">
@@ -772,7 +772,7 @@ export default function Configuracoes() {
                     Acesso a leads, conversas, tarefas e agenda. Pode criar e gerenciar seus próprios itens.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['vendedor']?.length || 0} permissões
+                    Acesso padrão ({rolePermissions['vendedor']?.length || 0} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4">
@@ -783,7 +783,7 @@ export default function Configuracoes() {
                     Acesso a conversas e agenda. Focado em atendimento ao cliente.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['suporte']?.length || 0} permissões
+                    Acesso suporte ({rolePermissions['suporte']?.length || 0} módulos)
                   </div>
                 </div>
               </div>
@@ -1010,7 +1010,7 @@ export default function Configuracoes() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{currentCompany.name}</span>
+                  <span className="text-sm text-muted-foreground">{currentCompany.name || "Rosh Pizzaria"}</span>
                   <Button
                     variant="ghost"
                     size="icon"

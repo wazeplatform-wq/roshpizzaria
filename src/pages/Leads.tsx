@@ -880,7 +880,7 @@ export default function Leads() {
       {/* Header responsivo */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Clientes da Pizzaria</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Clientes da Rosh Pizzaria</h1>
           <p className="text-sm md:text-base text-muted-foreground">
             Cadastro de clientes, pedidos e aniversariantes
           </p>
@@ -944,7 +944,7 @@ export default function Leads() {
               className="flex-shrink-0 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50 data-[state=active]:bg-green-600"
             >
               <Trophy className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Compras</span>
+              <span className="hidden md:inline">Fidelizados</span>
             </Button>
             <Button 
               size="sm" 

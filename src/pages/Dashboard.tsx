@@ -258,14 +258,14 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      title: "Total de Leads",
+      title: "Total de Clientes",
       value: stats.totalLeads,
       icon: Users,
       description: "Leads ativos no sistema",
       color: "text-primary",
     },
     {
-      title: "Valor em Pipeline",
+      title: "Vendas Previstas",
       value: `R$ ${stats.totalValue.toLocaleString("pt-BR")}`,
       icon: DollarSign,
       description: "Valor total em negociação",
@@ -279,7 +279,7 @@ export default function Dashboard() {
       color: "text-accent",
     },
     {
-      title: "Negócios Ativos",
+      title: "Pedidos Ativos",
       value: stats.activeDeals,
       icon: Target,
       description: "Em andamento",
@@ -330,9 +330,9 @@ export default function Dashboard() {
     <div className="space-y-4 md:space-y-8 animate-in fade-in duration-500">
       <div className="space-y-1 md:space-y-2">
         <h1 className="text-2xl md:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Analytics & Dashboard
+          Analytics & Performance
         </h1>
-        <p className="text-muted-foreground text-sm md:text-lg">Visão completa e análises detalhadas do seu CRM</p>
+        <p className="text-muted-foreground text-sm md:text-lg">Visão completa e análises detalhadas do seu negócio</p>
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">

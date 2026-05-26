@@ -455,7 +455,7 @@ export function SubcontasManager() {
               <Building2 className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
               <h3 className="mt-4 text-lg font-semibold">Nenhuma subconta criada</h3>
               <p className="text-muted-foreground mt-2">
-                Comece criando sua primeira licença de CRM para um cliente
+                Comece criando sua primeira licença de sistema para um cliente
               </p>
               <Button onClick={() => setNovaSubcontaOpen(true)} className="mt-4">
                 <Plus className="mr-2 h-4 w-4" />

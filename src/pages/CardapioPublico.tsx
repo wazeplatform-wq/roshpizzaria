@@ -491,7 +491,7 @@ export default function CardapioPublico() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white max-w-5xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-extrabold drop-shadow-lg">
-            {config.nome_loja || "Sabor que conquista 🍕"}
+            {config.nome_loja || "Rosh Pizzaria 🍕"}
           </h2>
           <p className="text-sm sm:text-base text-white/90 mt-1 drop-shadow">
             {config.descricao_loja || "Massa artesanal, ingredientes frescos e entrega rapidinha"}
