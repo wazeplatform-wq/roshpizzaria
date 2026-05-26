@@ -917,8 +917,8 @@ export default function CardapioPublico() {
 
       {/* Product Dialog */}
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="p-0 overflow-hidden max-w-md">
-          <div className="relative h-56 bg-neutral-100">
+        <DialogContent className="p-0 overflow-hidden max-w-md w-[calc(100%-1rem)] sm:w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col gap-0 rounded-2xl">
+          <div className="relative h-32 sm:h-56 bg-neutral-100 flex-shrink-0">
             <ProductImage
               src={selectedProduct?.imagem_url}
               alt={selectedProduct?.nome || ""}
@@ -926,16 +926,16 @@ export default function CardapioPublico() {
             />
             <button
               onClick={() => setSelectedProduct(null)}
-              className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
+              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
               aria-label="Fechar"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-5 space-y-4">
+          <div className="p-4 sm:p-5 space-y-3 sm:space-y-4 overflow-y-auto flex-1 min-h-0">
             <DialogHeader className="text-left p-0 space-y-1">
-              <DialogTitle className="text-xl">{selectedProduct?.nome}</DialogTitle>
-              <p className="text-sm text-neutral-500">
+              <DialogTitle className="text-base sm:text-xl">{selectedProduct?.nome}</DialogTitle>
+              <p className="text-xs sm:text-sm text-neutral-500 line-clamp-3">
                 {selectedProduct?.descricao || selectedProduct?.descricao_completa || selectedProduct?.descricao_curta || "Sem descrição."}
               </p>
             </DialogHeader>
