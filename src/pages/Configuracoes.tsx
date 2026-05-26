@@ -643,7 +643,7 @@ export default function Configuracoes() {
                 <AlertDialogDescription>
                   Tem certeza que deseja excluir o usuário <strong>{colaboradorParaExcluir?.nome}</strong>?
                   <br /><br />
-                  Esta ação irá remover o acesso do usuário à empresa. Se o usuário não estiver vinculado a outras empresas, ele será completamente excluído do sistema.
+                  Esta ação irá remover o acesso do usuário à empresa. Se o usuário não estiver vinculado a outras empresas, ele será completamente removido do sistema.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
