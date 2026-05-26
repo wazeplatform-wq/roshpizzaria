@@ -101,8 +101,8 @@ export default function IA() {
     },
     {
       id: "agendamento",
-      name: "IA de Agendamento",
-      description: "Agenda, remarca e cancela compromissos automaticamente",
+      name: "Agente de Reservas",
+      description: "Gerencia reservas de mesas e horários automaticamente",
       icon: Target,
       color: "bg-emerald-500",
       active: agentStates.agendamento ?? true,
