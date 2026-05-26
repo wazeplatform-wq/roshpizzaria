@@ -1213,6 +1213,150 @@ export default function CardapioPublico() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Minha Conta Dialog */}
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent className="max-w-md w-[calc(100%-1rem)] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" style={{ color: primary }} />
+              {isLogged ? "Minha conta" : "Meu cadastro"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {!isLogged ? (
+            <div className="space-y-3 pt-2">
+              <p className="text-sm text-neutral-600">
+                Faça um cadastro rápido para acumular pontos e não digitar seus dados a cada pedido.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Nome</Label>
+                <Input
+                  value={customer.nome}
+                  onChange={(e) => setCustomer({ ...customer, nome: e.target.value })}
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>WhatsApp</Label>
+                <Input
+                  inputMode="tel"
+                  value={customer.telefone}
+                  onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Endereço de entrega</Label>
+                <Textarea
+                  rows={2}
+                  value={customer.endereco}
+                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
+                  placeholder="Rua, número, bairro, referência"
+                />
+              </div>
+              <Button
+                className="w-full h-11 text-white font-semibold"
+                style={{ backgroundColor: primary }}
+                onClick={() => {
+                  if (!customer.nome.trim() || !customer.telefone.trim()) {
+                    toast.error("Informe nome e WhatsApp");
+                    return;
+                  }
+                  try {
+                    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                      nome: customer.nome,
+                      telefone: customer.telefone,
+                      tipo_atendimento: customer.tipo_atendimento,
+                      forma_pagamento: customer.forma_pagamento,
+                      endereco: customer.endereco,
+                    }));
+                  } catch {/* ignore */}
+                  toast.success("Cadastro salvo!");
+                  openAccount();
+                }}
+              >
+                Salvar cadastro
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2">
+              <div
+                className="rounded-2xl p-4 text-white"
+                style={{ background: `linear-gradient(135deg, ${primary}, ${primary}cc)` }}
+              >
+                <div className="flex items-center gap-2 text-sm opacity-90">
+                  <Star className="h-4 w-4 fill-current" />
+                  Programa de fidelidade
+                </div>
+                <div className="mt-2 text-3xl font-extrabold">
+                  {accountLoading ? "…" : (accountData?.pontos ?? 0)} <span className="text-base font-medium opacity-90">pontos</span>
+                </div>
+                <div className="text-xs opacity-90 mt-1">
+                  {accountLoading
+                    ? "Carregando..."
+                    : `${accountData?.pedidos ?? 0} pedido(s) • ${formatBRL(accountData?.total ?? 0)} acumulados`}
+                </div>
+                <div className="text-[11px] opacity-80 mt-2">A cada R$ 10,00 em pedidos você ganha 1 ponto.</div>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Nome</span>
+                  <span className="font-medium text-neutral-900">{customer.nome}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">WhatsApp</span>
+                  <span className="font-medium text-neutral-900">{customer.telefone}</span>
+                </div>
+                {customer.endereco && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-neutral-500 shrink-0">Endereço</span>
+                    <span className="font-medium text-neutral-900 text-right">{customer.endereco}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-neutral-500">Editar endereço de entrega</Label>
+                <Textarea
+                  rows={2}
+                  value={customer.endereco}
+                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                        nome: customer.nome,
+                        telefone: customer.telefone,
+                        tipo_atendimento: customer.tipo_atendimento,
+                        forma_pagamento: customer.forma_pagamento,
+                        endereco: customer.endereco,
+                      }));
+                      toast.success("Dados atualizados");
+                    } catch {/* ignore */}
+                  }}
+                >
+                  Atualizar dados
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={logoutAccount}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair deste dispositivo
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
