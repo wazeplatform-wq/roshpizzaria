@@ -1099,43 +1099,43 @@ export default function CardapioPublico() {
             <div className="space-y-1.5">
               <Label>Observações</Label>
               <Textarea
-                rows={3}
+                rows={2}
                 value={selectedObs}
                 onChange={(e) => setSelectedObs(e.target.value)}
                 placeholder="Ex: sem cebola, bem assada..."
               />
             </div>
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}>
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-medium">{selectedQty}</span>
-                <Button variant="outline" size="icon" onClick={() => setSelectedQty((q) => q + 1)}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              {(() => {
-                if (!selectedProduct) return null;
-                const isPizza = isPizzaProduct(selectedProduct);
-                const validExtras = isPizza && selectedPizzaSize
-                  ? extraFlavors.filter(Boolean).slice(0, selectedPizzaSize.maxFlavors - 1)
-                  : [];
-                const finalPrice = isPizza && selectedPizzaSize
-                  ? computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier)
-                  : Number(selectedProduct.preco_sugerido || 0);
-                return (
-                  <Button
-                    className="text-white font-semibold"
-                    style={{ backgroundColor: primary }}
-                    onClick={addToCart}
-                    disabled={isPizza && !selectedPizzaSize}
-                  >
-                    Adicionar {formatBRL(finalPrice * selectedQty)}
-                  </Button>
-                );
-              })()}
+          </div>
+          <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-t bg-white flex-shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}>
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="w-7 text-center font-medium">{selectedQty}</span>
+              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setSelectedQty((q) => q + 1)}>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
+            {(() => {
+              if (!selectedProduct) return null;
+              const isPizza = isPizzaProduct(selectedProduct);
+              const validExtras = isPizza && selectedPizzaSize
+                ? extraFlavors.filter(Boolean).slice(0, selectedPizzaSize.maxFlavors - 1)
+                : [];
+              const finalPrice = isPizza && selectedPizzaSize
+                ? computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier)
+                : Number(selectedProduct.preco_sugerido || 0);
+              return (
+                <Button
+                  className="text-white font-semibold flex-1 h-11"
+                  style={{ backgroundColor: primary }}
+                  onClick={addToCart}
+                  disabled={isPizza && !selectedPizzaSize}
+                >
+                  Adicionar {formatBRL(finalPrice * selectedQty)}
+                </Button>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
