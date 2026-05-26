@@ -944,7 +944,7 @@ export default function Leads() {
               className="flex-shrink-0 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50 data-[state=active]:bg-green-600"
             >
               <Trophy className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Compras</span>
+              <span className="hidden md:inline">Fidelizados</span>
             </Button>
             <Button 
               size="sm" 
