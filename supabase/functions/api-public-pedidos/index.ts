@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 type MenuRequest = {
-  action: "menu" | "create";
+  action: "menu" | "create" | "customer";
+  telefone?: string;
   slug: string;
   customer?: {
     nome: string;
