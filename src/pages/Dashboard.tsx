@@ -265,7 +265,7 @@ export default function Dashboard() {
       color: "text-primary",
     },
     {
-      title: "Valor em Pipeline",
+      title: "Vendas Previstas",
       value: `R$ ${stats.totalValue.toLocaleString("pt-BR")}`,
       icon: DollarSign,
       description: "Valor total em negociação",
