@@ -330,9 +330,9 @@ export default function Dashboard() {
     <div className="space-y-4 md:space-y-8 animate-in fade-in duration-500">
       <div className="space-y-1 md:space-y-2">
         <h1 className="text-2xl md:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Analytics & Dashboard
+          Analytics & Performance
         </h1>
-        <p className="text-muted-foreground text-sm md:text-lg">Visão completa e análises detalhadas do seu CRM</p>
+        <p className="text-muted-foreground text-sm md:text-lg">Visão completa e análises detalhadas do seu negócio</p>
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
