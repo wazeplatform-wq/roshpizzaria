@@ -530,6 +530,14 @@ export default function CardapioPublico() {
           >
             <Share2 className="h-5 w-5" />
           </button>
+          <button
+            aria-label="Minha conta"
+            onClick={openAccount}
+            className="h-9 px-3 rounded-full hover:bg-white/15 flex items-center gap-1.5 transition text-sm font-medium"
+          >
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">{isLogged ? customer.nome.split(" ")[0] : "Entrar"}</span>
+          </button>
         </div>
         {searchOpen && (
           <div className="max-w-5xl mx-auto px-4 pb-3 animate-fade-in">
