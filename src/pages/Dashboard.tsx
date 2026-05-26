@@ -258,7 +258,7 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      title: "Total de Leads",
+      title: "Total de Clientes",
       value: stats.totalLeads,
       icon: Users,
       description: "Leads ativos no sistema",
