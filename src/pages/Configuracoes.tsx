@@ -750,7 +750,7 @@ export default function Configuracoes() {
                     Acesso total à sua empresa, gestão de usuários e configurações.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['company_admin']?.length || 0} permissões
+                    Acesso administrador ({rolePermissions['company_admin']?.length || 0} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4">
