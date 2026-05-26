@@ -238,10 +238,10 @@ export default function Pedidos() {
     const nextStatus = STATUS_FLOW[Math.min(idx + 1, STATUS_FLOW.length - 1)];
     if (nextStatus === pedido.status) return;
 
-    // Quando aceitar o pedido, perguntar o tempo estimado de preparo
+    // Quando aceitar o pedido, busca tempo de preparo padrão da loja (sem prompt)
     let tempoMin: number | undefined;
     if (nextStatus === "aceito") {
-      let defaultTempo = 30;
+      let defaultTempo = 40;
       try {
         const { data: cfg } = await supabase
           .from("loja_configuracoes" as any)
@@ -252,13 +252,7 @@ export default function Pedidos() {
           defaultTempo = Number((cfg as any).tempo_preparo_min);
         }
       } catch {}
-      const input = window.prompt(
-        `Tempo estimado de preparo (em minutos) para enviar ao cliente:`,
-        String(defaultTempo)
-      );
-      if (input === null) return; // cancelou
-      const parsed = parseInt(input, 10);
-      tempoMin = Number.isFinite(parsed) && parsed > 0 ? parsed : defaultTempo;
+      tempoMin = defaultTempo;
     }
 
     try {
@@ -270,8 +264,8 @@ export default function Pedidos() {
         status: nextStatus,
         descricao: `Status alterado para ${STATUS_LABELS[nextStatus]}${tempoMin ? ` (tempo estimado: ${tempoMin} min)` : ""}`,
       });
-      // Envia notificação ao cliente via WhatsApp
-      sendWhatsAppStatusMessage(pedido, nextStatus, tempoMin);
+      // Envia notificação ao cliente via WhatsApp (aguarda para garantir envio)
+      await sendWhatsAppStatusMessage(pedido, nextStatus, tempoMin);
       toast.success(`Pedido movido para ${STATUS_LABELS[nextStatus]}`);
       await load();
     } catch {
