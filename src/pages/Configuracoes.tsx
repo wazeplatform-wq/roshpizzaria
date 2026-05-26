@@ -772,7 +772,7 @@ export default function Configuracoes() {
                     Acesso a leads, conversas, tarefas e agenda. Pode criar e gerenciar seus próprios itens.
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    Permissões: {rolePermissions['vendedor']?.length || 0} permissões
+                    Acesso padrão ({rolePermissions['vendedor']?.length || 0} módulos)
                   </div>
                 </div>
                 <div className="rounded-md border p-4">
