@@ -380,16 +380,20 @@ export default function CardapioPublico() {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Falha ao criar pedido");
       toast.success(`Pedido enviado com sucesso! Código ${data.codigo_pedido}`);
+      // Salvar dados do cliente para próximos pedidos (sem email, simples)
+      try {
+        localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+          nome: customer.nome,
+          telefone: customer.telefone,
+          tipo_atendimento: customer.tipo_atendimento,
+          forma_pagamento: customer.forma_pagamento,
+          endereco: customer.endereco,
+        }));
+      } catch {/* ignore */}
       setCart([]);
       setCartOpen(false);
-      setCustomer({
-        nome: "",
-        telefone: "",
-        tipo_atendimento: "entrega",
-        forma_pagamento: "pix",
-        observacoes: "",
-        endereco: "",
-      });
+      // Mantém nome, telefone, endereço; limpa apenas observações
+      setCustomer((prev) => ({ ...prev, observacoes: "" }));
     } catch (error: any) {
       console.error(error);
       toast.error(error?.message || "Erro ao enviar pedido");
