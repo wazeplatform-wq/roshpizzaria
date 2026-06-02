@@ -1,667 +1,633 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
-import { Loader2, Package, Plus, ImagePlus, CookingPot, Boxes, Settings2, Pizza } from "lucide-react";
-// CookingPot is used by the bordas tab
-import { PizzaTamanhosManager } from "@/components/produtos/PizzaTamanhosManager";
-import { PizzaBordasManager } from "@/components/produtos/PizzaBordasManager";
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+import { Package, ImagePlus, Trash2, Edit2 } from 'lucide-react';
+import { PizzaTamanhosManager } from '@/components/produtos/PizzaTamanhosManager';
+import { PizzaBordasManager } from '@/components/produtos/PizzaBordasManager';
 
-type TipoProduto = "produto" | "insumo" | "combo" | "adicional";
+type TipoProduto = 'produto' | 'insumo' | 'combo' | 'adicional';
 
 type Produto = {
-  id: string;
+  id: number;
   nome: string;
-  descricao: string | null;
-  descricao_curta: string | null;
-  descricao_completa: string | null;
-  preco_sugerido: number | null;
-  categoria: string | null;
+  categoria: string;
   subcategoria: string | null;
-  ativo: boolean | null;
+  descricao: string | null;
+  preco_sugerido: number;
   tipo_produto: TipoProduto;
-  imagem_url: string | null;
-  sku: string | null;
-  peso_gramas: number | null;
-  tempo_preparo_min: number | null;
+  ativo: boolean;
   ativo_cardapio: boolean;
-  ordem_exibicao: number;
+  imagem_url: string | null;
+  destaque_cardapio: boolean;
   permite_observacao: boolean;
-  controla_estoque: boolean;
   estoque_atual: number | null;
   estoque_minimo: number | null;
   unidade_medida: string | null;
-  destaque_cardapio: boolean;
+  grupos: number;
 };
 
-type GrupoOpcao = {
-  id: string;
-  produto_id: string;
+type ProdutoForm = {
   nome: string;
-  tipo_grupo: string;
-  obrigatorio: boolean;
-  minimo_escolhas: number;
-  maximo_escolhas: number;
+  categoria: string;
+  subcategoria: string;
+  descricao: string;
+  preco_sugerido: string;
+  tipo_produto: TipoProduto;
   ativo: boolean;
+  ativo_cardapio: boolean;
+  destaque_cardapio: boolean;
+  permite_observacao: boolean;
+  estoque_atual: string;
+  estoque_minimo: string;
+  unidade_medida: string;
+  grupos: string;
 };
 
 type Opcao = {
-  id: string;
-  grupo_id: string;
+  id: number;
   nome: string;
-  descricao: string | null;
   preco_adicional: number;
   ativo: boolean;
 };
 
-const EMPTY_FORM = {
-  nome: "",
-  descricao: "",
-  descricao_curta: "",
-  descricao_completa: "",
-  preco_sugerido: "",
-  categoria: "",
-  subcategoria: "",
-  tipo_produto: "produto" as TipoProduto,
-  sku: "",
-  peso_gramas: "",
-  tempo_preparo_min: "",
+const PRODUCT_TABS = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'produto', label: 'Produtos' },
+  { key: 'combo', label: 'Combos' },
+  { key: 'adicional', label: 'Adicionais' },
+  { key: 'insumo', label: 'Insumos' },
+  { key: 'opcoes', label: 'Opções' },
+  { key: 'tamanhos', label: 'Tamanhos' },
+  { key: 'bordas', label: 'Bordas' },
+];
+
+const CSS = `
+:root{--bg:#0f0f11;--surface:#17171a;--surface2:#1e1e22;--surface3:#252529;--border:rgba(255,255,255,0.08);--border-hover:rgba(255,255,255,0.16);--text:#f0f0f0;--text2:#9999aa;--text3:#666677;--accent:#ff6b35;--accent2:#ff9a1e;--accent-dim:rgba(255,107,53,0.12);--radius:14px;--radius-sm:10px;--mono: 'JetBrains Mono', monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+.page{padding:28px;max-width:1240px;margin:0 auto}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:24px}
+.page-title{font-size:26px;font-weight:700}
+.page-sub{color:var(--text2);font-size:14px;margin-top:6px;max-width:680px}
+.header-actions{display:flex;gap:10px;flex-wrap:wrap}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);padding:16px;border-radius:18px;min-height:94px}
+.kpi-label{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab-trigger{padding:10px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer}
+.tab-trigger[data-state='active']{background:var(--accent);color:#fff;border-color:transparent}
+.filter-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.search-input{width:320px;min-width:220px;max-width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.prod-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 30px rgba(0,0,0,0.12)}
+.prod-card.destaque{border-color:var(--accent);box-shadow:0 18px 40px rgba(255,107,53,0.18)}
+.prod-image-wrap{position:relative;height:160px;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center}
+.image-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:42px;}
+.badge{position:absolute;top:14px;left:14px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(0,0,0,0.45);color:#fff}
+.prod-body{padding:18px;display:flex;flex-direction:column;gap:10px}
+.prod-name{font-size:18px;font-weight:700}
+.prod-category{font-size:12px;color:var(--text3);font-family:var(--mono);letter-spacing:.02em}
+.prod-desc{color:var(--text2);font-size:13px;line-height:1.5}
+.prod-meta{display:flex;justify-content:space-between;align-items:center;padding:16px;border-top:1px solid rgba(255,255,255,0.06);background:var(--surface2)}
+.prod-meta span{font-size:13px;color:var(--text2)}
+.toggle{width:36px;height:20px;background:var(--surface3);border-radius:999px;cursor:pointer}
+.toggle.on{background:var(--accent)}
+.prod-actions{display:flex;gap:10px;padding:16px;border-top:1px solid rgba(255,255,255,0.06);background:var(--surface2)}
+.action-btn{flex:1;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
+.action-btn.danger{border-color:rgba(255,107,53,0.22);color:var(--accent)}
+.modal-backdrop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:200}
+.modal-shell{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:min(760px,95%);max-height:90vh;overflow:auto}
+.modal-header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:18px;font-weight:700}
+.modal-body{padding:20px;display:grid;gap:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-full{grid-column:span 2}
+.form-input,
+.form-textarea{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--surface2);color:var(--text)}
+.form-textarea{min-height:110px;resize:vertical}
+.image-upload-box{border:1px dashed rgba(255,255,255,0.16);border-radius:16px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;background:rgba(255,255,255,0.03)}
+.image-upload-label{font-size:14px;color:var(--text2)}
+.empty-state{padding:40px 22px;border-radius:18px;background:var(--surface2);border:1px dashed rgba(255,255,255,0.08);color:var(--text2);text-align:center}
+`; 
+
+const mockProducts: Produto[] = [
+  { id: 1, nome: 'Pizza Calabresa', categoria: 'Pizzas Tradicionais', subcategoria: 'Salgadas', descricao: 'Molho, mussarela e calabresa', preco_sugerido: 49.9, tipo_produto: 'produto', ativo: true, ativo_cardapio: true, imagem_url: null, destaque_cardapio: true, permite_observacao: true, estoque_atual: 12, estoque_minimo: 2, unidade_medida: 'un', grupos: 2 },
+  { id: 2, nome: 'Pizza 4 Queijos', categoria: 'Pizzas Especiais', subcategoria: 'Salgadas', descricao: 'Mussarela, parmesão, catupiry e gorgonzola', preco_sugerido: 62.9, tipo_produto: 'produto', ativo: true, ativo_cardapio: true, imagem_url: null, destaque_cardapio: true, permite_observacao: true, estoque_atual: 8, estoque_minimo: 1, unidade_medida: 'un', grupos: 2 },
+  { id: 5, nome: 'Combo Família', categoria: 'Combos', subcategoria: null, descricao: '2 pizzas grandes + 2 refrigerantes 2L', preco_sugerido: 119.9, tipo_produto: 'combo', ativo: true, ativo_cardapio: true, imagem_url: null, destaque_cardapio: true, permite_observacao: true, estoque_atual: null, estoque_minimo: null, unidade_medida: null, grupos: 0 },
+  { id: 8, nome: 'Farinha de Trigo 5kg', categoria: 'Insumos', subcategoria: null, descricao: 'Farinha tipo 1', preco_sugerido: 0, tipo_produto: 'insumo', ativo: true, ativo_cardapio: false, imagem_url: null, destaque_cardapio: false, permite_observacao: false, estoque_atual: 34, estoque_minimo: 5, unidade_medida: 'kg', grupos: 0 },
+];
+
+const mockOptions: Opcao[] = [
+  { id: 1, nome: 'Borda recheada', preco_adicional: 7.5, ativo: true },
+  { id: 2, nome: 'Extra catupiry', preco_adicional: 5.0, ativo: true },
+];
+
+const EMPTY_FORM: ProdutoForm = {
+  nome: '',
+  categoria: '',
+  subcategoria: '',
+  descricao: '',
+  preco_sugerido: '0',
+  tipo_produto: 'produto',
   ativo: true,
   ativo_cardapio: true,
-  ordem_exibicao: "0",
-  permite_observacao: true,
-  controla_estoque: false,
-  estoque_atual: "",
-  estoque_minimo: "",
-  unidade_medida: "",
   destaque_cardapio: false,
+  permite_observacao: true,
+  estoque_atual: '',
+  estoque_minimo: '',
+  unidade_medida: '',
+  grupos: '0',
 };
 
 export default function Produtos() {
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [grupos, setGrupos] = useState<GrupoOpcao[]>([]);
-  const [opcoes, setOpcoes] = useState<Opcao[]>([]);
-
-  const [search, setSearch] = useState("");
-  const [tipoTab, setTipoTab] = useState("produto");
-
+  const [produtos, setProdutos] = useState<Produto[]>(mockProducts);
+  const [tipoTab, setTipoTab] = useState<string>('todos');
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Produto | null>(null);
+  const [formData, setFormData] = useState<ProdutoForm>({ ...EMPTY_FORM });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-  const [formData, setFormData] = useState({ ...EMPTY_FORM });
-
-  const [grupoDialogOpen, setGrupoDialogOpen] = useState(false);
-  const [opcaoDialogOpen, setOpcaoDialogOpen] = useState(false);
-  const [selectedProdutoId, setSelectedProdutoId] = useState<string>("");
-  const [selectedGrupoId, setSelectedGrupoId] = useState<string>("");
-  const [grupoForm, setGrupoForm] = useState({
-    nome: "",
-    tipo_grupo: "opcional",
-    obrigatorio: false,
-    minimo_escolhas: "0",
-    maximo_escolhas: "1",
-  });
-  const [opcaoForm, setOpcaoForm] = useState({
-    nome: "",
-    descricao: "",
-    preco_adicional: "0",
-  });
-
-  const loadCompany = useCallback(async () => {
-    const { data } = await supabase.rpc("get_my_company_id");
-    setCompanyId(data);
-    return data;
-  }, []);
-
-  const loadData = useCallback(async (cid?: string | null) => {
-    const company = cid || companyId;
-    if (!company) return;
-
-    setLoading(true);
-    try {
-      const [prodRes, gruposRes, opcoesRes] = await Promise.all([
-        supabase.from("produtos_servicos").select("*").eq("company_id", company).order("ordem_exibicao").order("nome"),
-        supabase.from("produto_grupos_opcoes" as any).select("*").eq("company_id", company).order("ordem"),
-        supabase.from("produto_opcoes" as any).select("*").eq("company_id", company).order("ordem"),
-      ]);
-
-      if (prodRes.error) throw prodRes.error;
-      if (gruposRes.error) throw gruposRes.error;
-      if (opcoesRes.error) throw opcoesRes.error;
-
-      setProdutos((prodRes.data || []) as unknown as Produto[]);
-      setGrupos((gruposRes.data || []) as unknown as GrupoOpcao[]);
-      setOpcoes((opcoesRes.data || []) as unknown as Opcao[]);
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao carregar produtos");
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId]);
-
-  useEffect(() => {
-    (async () => {
-      const cid = await loadCompany();
-      await loadData(cid);
-    })();
-  }, [loadCompany, loadData]);
+  const [imagePreview, setImagePreview] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Produto | null>(null);
+  const [opcoes, setOpcoes] = useState<Opcao[]>(mockOptions);
+  const [optionDialogOpen, setOptionDialogOpen] = useState(false);
+  const [editingOption, setEditingOption] = useState<Opcao | null>(null);
+  const [optionForm, setOptionForm] = useState({ nome: '', preco_adicional: '0', ativo: true });
 
   const filteredProdutos = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    const specialTabs = ['opcoes', 'tamanhos', 'bordas'];
+    if (specialTabs.includes(tipoTab)) return [];
     return produtos.filter((p) => {
-      const byType = tipoTab === "todos" ? true : p.tipo_produto === tipoTab;
-      const q = search.toLowerCase();
-      const bySearch =
-        p.nome.toLowerCase().includes(q) ||
-        (p.categoria || "").toLowerCase().includes(q) ||
-        (p.subcategoria || "").toLowerCase().includes(q);
+      const byType = tipoTab === 'todos' ? true : p.tipo_produto === tipoTab;
+      const bySearch = !q || p.nome.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q) || (p.subcategoria || '').toLowerCase().includes(q);
       return byType && bySearch;
     });
-  }, [produtos, search, tipoTab]);
+  }, [produtos, deferredSearch, tipoTab]);
 
-  const produtosFinais = useMemo(() => produtos.filter((p) => p.tipo_produto !== "insumo"), [produtos]);
-
-  const resetForm = () => {
-    setEditing(null);
-    setImageFile(null);
-    setImagePreview("");
-    setFormData({ ...EMPTY_FORM });
-  };
-
-  const openCreate = (tipo: TipoProduto = "produto") => {
-    resetForm();
-    setFormData((prev) => ({ ...prev, tipo_produto: tipo }));
-    setDialogOpen(true);
-  };
-
-  const openEdit = (produto: Produto) => {
-    setEditing(produto);
-    setImagePreview(produto.imagem_url || "");
-    setImageFile(null);
-    setFormData({
-      nome: produto.nome || "",
-      descricao: produto.descricao || "",
-      descricao_curta: produto.descricao_curta || "",
-      descricao_completa: produto.descricao_completa || "",
-      preco_sugerido: produto.preco_sugerido?.toString() || "",
-      categoria: produto.categoria || "",
-      subcategoria: produto.subcategoria || "",
-      tipo_produto: produto.tipo_produto,
-      sku: produto.sku || "",
-      peso_gramas: produto.peso_gramas?.toString() || "",
-      tempo_preparo_min: produto.tempo_preparo_min?.toString() || "",
-      ativo: produto.ativo ?? true,
-      ativo_cardapio: produto.ativo_cardapio ?? false,
-      ordem_exibicao: String(produto.ordem_exibicao || 0),
-      permite_observacao: produto.permite_observacao ?? true,
-      controla_estoque: produto.controla_estoque ?? false,
-      estoque_atual: produto.estoque_atual?.toString() || "",
-      estoque_minimo: produto.estoque_minimo?.toString() || "",
-      unidade_medida: produto.unidade_medida || "",
-      destaque_cardapio: produto.destaque_cardapio ?? false,
-    });
-    setDialogOpen(true);
-  };
-
-  const uploadProductImage = async () => {
-    if (!imageFile || !companyId) return imagePreview || null;
-    setUploading(true);
-    try {
-      const ext = imageFile.name.split(".").pop() || "jpg";
-      const path = `${companyId}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("product-images").upload(path, imageFile, {
-        cacheControl: "3600",
-        upsert: true,
-      });
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-      return data.publicUrl;
-    } finally {
-      setUploading(false);
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(editing?.imagem_url ?? '');
     }
-  };
+  }, [editing, imageFile]);
 
-  const handleSave = async () => {
-    if (!companyId) return;
+  useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const handleOpenCreate = useCallback((tipo: TipoProduto) => {
+    setEditing(null);
+    setFormData({ ...EMPTY_FORM, tipo_produto: tipo });
+    setImageFile(null);
+    setImagePreview('');
+    setDialogOpen(true);
+  }, []);
+
+  const handleOpenEdit = useCallback((produto: Produto) => {
+    setEditing(produto);
+    setFormData({
+      nome: produto.nome,
+      categoria: produto.categoria,
+      subcategoria: produto.subcategoria ?? '',
+      descricao: produto.descricao ?? '',
+      preco_sugerido: produto.preco_sugerido.toString(),
+      tipo_produto: produto.tipo_produto,
+      ativo: produto.ativo,
+      ativo_cardapio: produto.ativo_cardapio,
+      destaque_cardapio: produto.destaque_cardapio,
+      permite_observacao: produto.permite_observacao,
+      estoque_atual: produto.estoque_atual?.toString() ?? '',
+      estoque_minimo: produto.estoque_minimo?.toString() ?? '',
+      unidade_medida: produto.unidade_medida ?? '',
+      grupos: produto.grupos.toString(),
+    });
+    setImageFile(null);
+    setImagePreview(produto.imagem_url ?? '');
+    setDialogOpen(true);
+  }, []);
+
+  const handleOpenOptionCreate = useCallback(() => {
+    setEditingOption(null);
+    setOptionForm({ nome: '', preco_adicional: '0', ativo: true });
+    setOptionDialogOpen(true);
+  }, []);
+
+  const handleOpenEditOption = useCallback((option: Opcao) => {
+    setEditingOption(option);
+    setOptionForm({ nome: option.nome, preco_adicional: option.preco_adicional.toString(), ativo: option.ativo });
+    setOptionDialogOpen(true);
+  }, []);
+
+  const handleSaveOption = useCallback(() => {
+    if (!optionForm.nome.trim()) {
+      toast.error('Nome da opção é obrigatório');
+      return;
+    }
+    const preco = Number(optionForm.preco_adicional);
+    if (Number.isNaN(preco) || preco < 0) {
+      toast.error('Preço da opção deve ser zero ou maior');
+      return;
+    }
+    const option: Opcao = {
+      id: editingOption?.id ?? Date.now(),
+      nome: optionForm.nome.trim(),
+      preco_adicional: preco,
+      ativo: optionForm.ativo,
+    };
+    setOpcoes((prev) => {
+      if (editingOption) {
+        return prev.map((opt) => (opt.id === editingOption.id ? option : opt));
+      }
+      return [option, ...prev];
+    });
+    setOptionDialogOpen(false);
+    setEditingOption(null);
+    toast.success('Opção salva com sucesso');
+  }, [editingOption, optionForm]);
+
+  const handleDeleteOption = useCallback((optionId: number) => {
+    setOpcoes((prev) => prev.filter((opt) => opt.id !== optionId));
+    toast.success('Opção removida');
+  }, []);
+
+  const revokePreview = useCallback(() => {
+    if (imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+  }, [imagePreview]);
+
+  const handleImageChange = useCallback((file: File | null) => {
+    revokePreview();
+    setImageFile(file);
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImagePreview(editing?.imagem_url ?? '');
+    }
+  }, [editing, revokePreview]);
+
+  const fileToDataUrl = useCallback((file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const uploadProductImage = useCallback(async (): Promise<string | null> => {
+    if (!imageFile) {
+      return editing?.imagem_url ?? null;
+    }
+    return await fileToDataUrl(imageFile);
+  }, [editing, fileToDataUrl, imageFile]);
+
+  const handleSave = useCallback(async () => {
     if (!formData.nome.trim()) {
-      toast.error("Nome é obrigatório");
+      toast.error('Nome é obrigatório');
+      return;
+    }
+    const preco = Number(formData.preco_sugerido);
+    if (Number.isNaN(preco) || preco < 0) {
+      toast.error('Preço não pode ser negativo');
       return;
     }
 
-    setSaving(true);
-    try {
-      const imageUrl = await uploadProductImage();
-      const payload = {
-        company_id: companyId,
-        nome: formData.nome.trim(),
-        descricao: formData.descricao.trim() || null,
-        descricao_curta: formData.descricao_curta.trim() || null,
-        descricao_completa: formData.descricao_completa.trim() || null,
-        preco_sugerido: formData.preco_sugerido ? Number(formData.preco_sugerido) : 0,
-        categoria: formData.categoria.trim() || null,
-        subcategoria: formData.subcategoria.trim() || null,
-        tipo_produto: formData.tipo_produto,
-        sku: formData.sku.trim() || null,
-        imagem_url: imageUrl || null,
-        peso_gramas: formData.peso_gramas ? Number(formData.peso_gramas) : null,
-        tempo_preparo_min: formData.tempo_preparo_min ? Number(formData.tempo_preparo_min) : null,
-        ativo: formData.ativo,
-        ativo_cardapio: formData.ativo_cardapio,
-        ordem_exibicao: Number(formData.ordem_exibicao || 0),
-        permite_observacao: formData.permite_observacao,
-        controla_estoque: formData.controla_estoque,
-        estoque_atual: formData.estoque_atual ? Number(formData.estoque_atual) : null,
-        estoque_minimo: formData.estoque_minimo ? Number(formData.estoque_minimo) : null,
-        unidade_medida: formData.unidade_medida.trim() || null,
-        destaque_cardapio: formData.destaque_cardapio,
-      } as any;
+    const imagem_url = await uploadProductImage();
+    const produto: Produto = {
+      id: editing?.id ?? Date.now(),
+      nome: formData.nome.trim(),
+      categoria: formData.categoria.trim(),
+      subcategoria: formData.subcategoria.trim() || null,
+      descricao: formData.descricao.trim() || null,
+      preco_sugerido: preco,
+      tipo_produto: formData.tipo_produto,
+      ativo: formData.ativo,
+      ativo_cardapio: formData.ativo_cardapio,
+      imagem_url,
+      destaque_cardapio: formData.destaque_cardapio,
+      permite_observacao: formData.permite_observacao,
+      estoque_atual: formData.estoque_atual.trim() ? Number(formData.estoque_atual) : null,
+      estoque_minimo: formData.estoque_minimo.trim() ? Number(formData.estoque_minimo) : null,
+      unidade_medida: formData.unidade_medida.trim() || null,
+      grupos: Number(formData.grupos) || 0,
+    };
 
-      const query = editing
-        ? supabase.from("produtos_servicos").update(payload).eq("id", editing.id)
-        : supabase.from("produtos_servicos").insert(payload);
-      const { error } = await query;
-      if (error) throw error;
+    setProdutos((prev) => {
+      if (editing) {
+        return prev.map((p) => (p.id === editing.id ? produto : p));
+      }
+      return [produto, ...prev];
+    });
+    setDialogOpen(false);
+    setEditing(null);
+    setImageFile(null);
+    setImagePreview('');
+    toast.success('Produto salvo com sucesso');
+  }, [editing, formData, uploadProductImage]);
 
-      toast.success(editing ? "Produto atualizado" : "Produto criado");
-      setDialogOpen(false);
-      resetForm();
-      await loadData(companyId);
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao salvar produto");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const confirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    setProdutos((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+    setDeleteTarget(null);
+    toast.success('Produto excluído');
+  }, [deleteTarget]);
 
-  const toggleActive = async (produto: Produto, field: "ativo" | "ativo_cardapio") => {
-    try {
-      const { error } = await supabase
-        .from("produtos_servicos")
-        .update({ [field]: !produto[field] } as any)
-        .eq("id", produto.id);
-      if (error) throw error;
-      await loadData();
-    } catch {
-      toast.error("Erro ao atualizar produto");
-    }
-  };
-
-  const handleDelete = async (produto: Produto) => {
-    if (!confirm(`Excluir "${produto.nome}"?`)) return;
-    try {
-      const { error } = await supabase.from("produtos_servicos").delete().eq("id", produto.id);
-      if (error) throw error;
-      toast.success("Produto excluído");
-      await loadData();
-    } catch {
-      toast.error("Erro ao excluir produto");
-    }
-  };
-
-  const saveGrupo = async () => {
-    if (!companyId || !selectedProdutoId || !grupoForm.nome.trim()) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase.from("produto_grupos_opcoes" as any).insert({
-        company_id: companyId,
-        produto_id: selectedProdutoId,
-        nome: grupoForm.nome.trim(),
-        tipo_grupo: grupoForm.tipo_grupo,
-        obrigatorio: grupoForm.obrigatorio,
-        minimo_escolhas: Number(grupoForm.minimo_escolhas || 0),
-        maximo_escolhas: Number(grupoForm.maximo_escolhas || 1),
-      });
-      if (error) throw error;
-      toast.success("Grupo de opções criado");
-      setGrupoDialogOpen(false);
-      setGrupoForm({ nome: "", tipo_grupo: "opcional", obrigatorio: false, minimo_escolhas: "0", maximo_escolhas: "1" });
-      await loadData();
-    } catch {
-      toast.error("Erro ao criar grupo");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveOpcao = async () => {
-    if (!companyId || !selectedGrupoId || !opcaoForm.nome.trim()) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase.from("produto_opcoes" as any).insert({
-        company_id: companyId,
-        grupo_id: selectedGrupoId,
-        nome: opcaoForm.nome.trim(),
-        descricao: opcaoForm.descricao.trim() || null,
-        preco_adicional: Number(opcaoForm.preco_adicional || 0),
-      });
-      if (error) throw error;
-      toast.success("Opção criada");
-      setOpcaoDialogOpen(false);
-      setOpcaoForm({ nome: "", descricao: "", preco_adicional: "0" });
-      await loadData();
-    } catch {
-      toast.error("Erro ao criar opção");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const productGroups = (produtoId: string) => grupos.filter((g) => g.produto_id === produtoId);
-  const groupOptions = (grupoId: string) => opcoes.filter((o) => o.grupo_id === grupoId);
+  const onChangeForm = useCallback((key: keyof ProdutoForm, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="page">
+      <style>{CSS}</style>
+
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Produtos</h1>
-          <p className="text-muted-foreground">Cadastre pizzas, bebidas, adicionais e insumos da operação.</p>
+          <div className="page-title">Produtos</div>
+          <div className="page-sub">Cadastre pizzas, bebidas, combos, adicionais e insumos com visual moderno e controles fechados.</div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => openCreate("produto")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Produto
-          </Button>
-          <Button variant="outline" onClick={() => openCreate("insumo")}>
-            <CookingPot className="h-4 w-4 mr-2" />
-            Novo Insumo
-          </Button>
+        <div className="header-actions">
+          <Button variant="secondary" onClick={() => handleOpenCreate('insumo')}>🍳 Novo Insumo</Button>
+          <Button onClick={() => handleOpenCreate('produto')}>＋ Novo Produto</Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card><CardHeader><CardTitle className="text-sm">Itens</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{produtos.length}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm">No cardápio</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{produtos.filter((p) => p.ativo_cardapio).length}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm">Insumos</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{produtos.filter((p) => p.tipo_produto === "insumo").length}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm">Com opções</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{grupos.length}</CardContent></Card>
+      <div className="kpi-grid">
+        <div className="kpi-card"><div className="kpi-label">Total de itens</div><div className="kpi-value">{produtos.length}</div></div>
+        <div className="kpi-card"><div className="kpi-label">No cardápio</div><div className="kpi-value">{produtos.filter((p) => p.ativo_cardapio).length}</div></div>
+        <div className="kpi-card"><div className="kpi-label">Insumos</div><div className="kpi-value">{produtos.filter((p) => p.tipo_produto === 'insumo').length}</div></div>
+        <div className="kpi-card"><div className="kpi-label">Com opções</div><div className="kpi-value">{produtos.filter((p) => p.grupos > 0).length}</div></div>
       </div>
 
-      <Tabs value={tipoTab} onValueChange={setTipoTab} className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="todos">Todos</TabsTrigger>
-          <TabsTrigger value="produto">Produtos</TabsTrigger>
-          <TabsTrigger value="combo">Combos</TabsTrigger>
-          <TabsTrigger value="adicional">Adicionais</TabsTrigger>
-          <TabsTrigger value="insumo">Insumos</TabsTrigger>
-          <TabsTrigger value="opcoes">Grupos e opções</TabsTrigger>
-          <TabsTrigger value="tamanhos"><Pizza className="h-4 w-4 mr-1" /> Tamanhos de Pizza</TabsTrigger>
-          <TabsTrigger value="bordas"><CookingPot className="h-4 w-4 mr-1" /> Bordas de Pizza</TabsTrigger>
+      <Tabs value={tipoTab} onValueChange={setTipoTab}>
+        <TabsList className="tabs">
+          {PRODUCT_TABS.map((tab) => (
+            <TabsTrigger key={tab.key} value={tab.key} className="tab-trigger">{tab.label}</TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value={tipoTab} className="space-y-4">
-          {tipoTab !== "opcoes" && (
-            <>
-              <Input placeholder="Buscar por nome, categoria ou subcategoria..." value={search} onChange={(e) => setSearch(e.target.value)} />
-              <Card>
-                <CardContent className="pt-6">
-                  {loading ? (
-                    <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {filteredProdutos.map((produto) => (
-                        <Card key={produto.id} className="border-muted">
-                          <CardContent className="pt-6 space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="h-20 w-20 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                                {produto.imagem_url ? (
-                                  <img src={produto.imagem_url} alt={produto.nome} className="h-full w-full object-cover" />
-                                ) : (
-                                  <Package className="h-8 w-8 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className="font-semibold truncate">{produto.nome}</h3>
-                                  <Badge variant="outline">{produto.tipo_produto}</Badge>
-                                  {produto.destaque_cardapio && <Badge>Destaque</Badge>}
-                                </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2">{produto.descricao_curta || produto.descricao || "Sem descrição"}</p>
-                                <div className="text-sm mt-2">
-                                  {produto.categoria && <span className="mr-2">{produto.categoria}</span>}
-                                  {produto.subcategoria && <span className="text-muted-foreground">/ {produto.subcategoria}</span>}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-lg font-bold text-primary">
-                                  {Number(produto.preco_sugerido || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {produto.tempo_preparo_min ? `${produto.tempo_preparo_min} min` : "Sem tempo de preparo"}{produto.peso_gramas ? ` • ${produto.peso_gramas}g` : ""}
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-2 items-end">
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span>Ativo</span>
-                                  <Switch checked={!!produto.ativo} onCheckedChange={() => toggleActive(produto, "ativo")} />
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span>Cardápio</span>
-                                  <Switch checked={!!produto.ativo_cardapio} onCheckedChange={() => toggleActive(produto, "ativo_cardapio")} />
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => openEdit(produto)}>Editar</Button>
-                              <Button variant="outline" size="sm" onClick={() => { setSelectedProdutoId(produto.id); setGrupoDialogOpen(true); }}>Opções</Button>
-                              <Button variant="destructive" size="sm" onClick={() => handleDelete(produto)}>Excluir</Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </>
-          )}
+        <div className="filter-bar">
+          <Input placeholder="Buscar por nome, categoria..." value={search} onChange={(event) => setSearch(event.target.value)} className="search-input" />
+          <Button variant="outline" onClick={() => setSearch('')}>Limpar</Button>
+        </div>
 
-          {tipoTab === "opcoes" && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {produtosFinais.map((produto) => (
-                <Card key={produto.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between gap-2">
-                      <span>{produto.nome}</span>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedProdutoId(produto.id); setGrupoDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Grupo
-                      </Button>
-                    </CardTitle>
-                    <CardDescription>{produto.categoria || "Sem categoria"}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-72">
-                      <div className="space-y-3 pr-4">
-                        {productGroups(produto.id).length === 0 && <p className="text-sm text-muted-foreground">Sem grupos de opções.</p>}
-                        {productGroups(produto.id).map((grupo) => (
-                          <Card key={grupo.id} className="border-dashed">
-                            <CardContent className="pt-4 space-y-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <div>
-                                  <p className="font-medium">{grupo.nome}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {grupo.tipo_grupo} • {grupo.obrigatorio ? "obrigatório" : "opcional"} • min {grupo.minimo_escolhas} / max {grupo.maximo_escolhas}
-                                  </p>
-                                </div>
-                                <Button size="sm" variant="outline" onClick={() => { setSelectedGrupoId(grupo.id); setOpcaoDialogOpen(true); }}>
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Opção
-                                </Button>
-                              </div>
-                              <div className="space-y-2">
-                                {groupOptions(grupo.id).length === 0 && <p className="text-xs text-muted-foreground">Sem opções.</p>}
-                                {groupOptions(grupo.id).map((opcao) => (
-                                  <div key={opcao.id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
-                                    <div>
-                                      <div className="font-medium">{opcao.nome}</div>
-                                      {opcao.descricao && <div className="text-xs text-muted-foreground">{opcao.descricao}</div>}
-                                    </div>
-                                    <Badge variant="secondary">
-                                      {Number(opcao.preco_adicional || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+        <TabsContent value="todos">
+          {filteredProdutos.length ? (
+            <div className="product-grid">
+              {filteredProdutos.map((produto) => (
+                <div className={`prod-card ${produto.destaque_cardapio ? 'destaque' : ''}`} key={produto.id}>
+                  <div className="prod-image-wrap">
+                    {produto.imagem_url ? (
+                      <img src={produto.imagem_url} alt={produto.nome} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                    ) : (
+                      <div className="image-placeholder"><Package size={42} /></div>
+                    )}
+                    <span className="badge">{produto.tipo_produto}</span>
+                  </div>
+                  <div className="prod-body">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div className="prod-name">{produto.nome}</div>
+                      {produto.destaque_cardapio && <span className="badge" style={{ top: 14, right: 14, left: 'auto', background: 'var(--accent)', position: 'absolute' }}>DESTAQUE</span>}
+                    </div>
+                    <div className="prod-category">{[produto.categoria, produto.subcategoria].filter(Boolean).join(' / ')}</div>
+                    {produto.descricao && <div className="prod-desc">{produto.descricao}</div>}
+                  </div>
+                  <div className="prod-meta">
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{produto.preco_sugerido > 0 ? produto.preco_sugerido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sem preço'}</div>
+                      <span>{produto.estoque_atual != null ? `Estoque: ${produto.estoque_atual}${produto.unidade_medida ? ` ${produto.unidade_medida}` : ''}` : 'Sem estoque'}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text3)' }}>Ativo</span>
+                        <div className={`toggle ${produto.ativo ? 'on' : ''}`} onClick={() => setProdutos((prev) => prev.map((p) => p.id === produto.id ? { ...p, ativo: !p.ativo } : p))} />
                       </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: 'var(--text3)' }}>Cardápio</span>
+                        <div className={`toggle ${produto.ativo_cardapio ? 'on' : ''}`} onClick={() => setProdutos((prev) => prev.map((p) => p.id === produto.id ? { ...p, ativo_cardapio: !p.ativo_cardapio } : p))} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="prod-actions">
+                    <button className="action-btn" type="button" onClick={() => handleOpenEdit(produto)}><Edit2 size={16} /> Editar</button>
+                    <button className="action-btn" type="button" onClick={() => setDeleteTarget(produto)}><Trash2 size={16} /> Excluir</button>
+                  </div>
+                </div>
               ))}
             </div>
+          ) : (
+            <div className="empty-state">Nenhum produto encontrado para esta seleção.</div>
           )}
         </TabsContent>
 
-        <TabsContent value="tamanhos" className="space-y-4">
+        {PRODUCT_TABS.filter((tab) => !['todos', 'opcoes', 'tamanhos', 'bordas'].includes(tab.key)).map((tab) => (
+          <TabsContent key={tab.key} value={tab.key}>
+            {filteredProdutos.length ? (
+              <div className="product-grid">
+                {filteredProdutos.map((produto) => (
+                  <div className="prod-card" key={produto.id}>
+                    <div className="prod-image-wrap">
+                      {produto.imagem_url ? (
+                        <img src={produto.imagem_url} alt={produto.nome} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
+                      ) : (
+                        <div className="image-placeholder"><Package size={42} /></div>
+                      )}
+                      <span className="badge">{produto.tipo_produto}</span>
+                    </div>
+                    <div className="prod-body">
+                      <div className="prod-name">{produto.nome}</div>
+                      <div className="prod-category">{[produto.categoria, produto.subcategoria].filter(Boolean).join(' / ')}</div>
+                      {produto.descricao && <div className="prod-desc">{produto.descricao}</div>}
+                    </div>
+                    <div className="prod-meta">
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{produto.preco_sugerido > 0 ? produto.preco_sugerido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sem preço'}</div>
+                        <span>{produto.estoque_atual != null ? `Estoque: ${produto.estoque_atual}${produto.unidade_medida ? ` ${produto.unidade_medida}` : ''}` : 'Sem estoque'}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text3)' }}>Ativo</span>
+                          <div className={`toggle ${produto.ativo ? 'on' : ''}`} onClick={() => setProdutos((prev) => prev.map((p) => p.id === produto.id ? { ...p, ativo: !p.ativo } : p))} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text3)' }}>Cardápio</span>
+                          <div className={`toggle ${produto.ativo_cardapio ? 'on' : ''}`} onClick={() => setProdutos((prev) => prev.map((p) => p.id === produto.id ? { ...p, ativo_cardapio: !p.ativo_cardapio } : p))} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="prod-actions">
+                      <button className="action-btn" type="button" onClick={() => handleOpenEdit(produto)}><Edit2 size={16} /> Editar</button>
+                      <button className="action-btn" type="button" onClick={() => setDeleteTarget(produto)}><Trash2 size={16} /> Excluir</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">Nenhum produto encontrado para esta seleção.</div>
+            )}
+          </TabsContent>
+        ))}
+
+        <TabsContent value="opcoes">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>Opções de produto</div>
+              <div style={{ color: 'var(--text2)', marginTop: 6 }}>Adicione complementos e opções que podem ser aplicados nos produtos.</div>
+            </div>
+            <Button onClick={handleOpenOptionCreate}>＋ Nova Opção</Button>
+          </div>
+          {opcoes.length ? (
+            <div className="product-grid">
+              {opcoes.map((opcao) => (
+                <div className="prod-card" key={opcao.id} style={{ position: 'relative' }}>
+                  <div className="prod-body" style={{ paddingBottom: 12 }}>
+                    <div className="prod-name">{opcao.nome}</div>
+                    <div className="prod-category">{`+ ${opcao.preco_adicional.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}</div>
+                  </div>
+                  <div className="prod-actions">
+                    <button className="action-btn" type="button" onClick={() => handleOpenEditOption(opcao)}><Edit2 size={16} /> Editar</button>
+                    <button className="action-btn danger" type="button" onClick={() => handleDeleteOption(opcao.id)}><Trash2 size={16} /> Excluir</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">Nenhuma opção cadastrada ainda.</div>
+          )}
+        </TabsContent>
+        <TabsContent value="tamanhos">
           <PizzaTamanhosManager />
         </TabsContent>
-
-        <TabsContent value="bordas" className="space-y-4">
+        <TabsContent value="bordas">
           <PizzaBordasManager />
         </TabsContent>
       </Tabs>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? "Editar item" : "Novo item"}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>Excluir "{deleteTarget?.nome}" permanentemente?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {dialogOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-shell">
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">{editing ? 'Editar produto' : 'Novo produto'}</div>
               </div>
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select value={formData.tipo_produto} onValueChange={(v) => setFormData({ ...formData, tipo_produto: v as TipoProduto })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="produto">Produto</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
-                    <SelectItem value="adicional">Adicional</SelectItem>
-                    <SelectItem value="insumo">Insumo</SelectItem>
-                  </SelectContent>
-                </Select>
+              <Button variant="ghost" onClick={() => { setDialogOpen(false); setEditing(null); setImageFile(null); setImagePreview(''); }}>Fechar</Button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div>
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input id="nome" value={formData.nome} onChange={(event) => onChangeForm('nome', event.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="categoria">Categoria</Label>
+                  <Input id="categoria" value={formData.categoria} onChange={(event) => onChangeForm('categoria', event.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="subcategoria">Subcategoria</Label>
+                  <Input id="subcategoria" value={formData.subcategoria} onChange={(event) => onChangeForm('subcategoria', event.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="preco">Preço sugerido</Label>
+                  <Input id="preco" type="number" step="0.01" min="0" value={formData.preco_sugerido} onChange={(event) => onChangeForm('preco_sugerido', event.target.value)} />
+                </div>
+                <div className="form-grid-full">
+                  <Label htmlFor="descricao">Descrição</Label>
+                  <Textarea id="descricao" value={formData.descricao} onChange={(event) => onChangeForm('descricao', event.target.value)} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <Label htmlFor="destaque" style={{ minWidth: 100 }}>Destaque</Label>
+                  <input
+                    id="destaque"
+                    type="checkbox"
+                    checked={formData.destaque_cardapio}
+                    onChange={(event) => onChangeForm('destaque_cardapio', event.target.checked)}
+                  />
+                </div>
+                <div className="form-grid-full">
+                  <div className="image-upload-box">
+                    <div>
+                      <div className="image-upload-label">Imagem do produto</div>
+                      <div style={{ marginTop: 8, color: 'var(--text2)' }}>Selecione um arquivo para mostrar no card.</div>
+                    </div>
+                    <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <ImagePlus size={18} />
+                      <span>Selecionar</span>
+                      <input type="file" accept="image/*" hidden onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)} />
+                    </label>
+                  </div>
+                  {imagePreview && (
+                    <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                      <img src={imagePreview} alt="Pré-visualização" style={{ width: '100%', height: 220, objectFit: 'cover' }} />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Categoria</Label><Input value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Subcategoria</Label><Input value={formData.subcategoria} onChange={(e) => setFormData({ ...formData, subcategoria: e.target.value })} /></div>
-              <div className="space-y-2"><Label>SKU</Label><Input value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} /></div>
-            </div>
-
-            <div className="space-y-2"><Label>Descrição curta</Label><Input value={formData.descricao_curta} onChange={(e) => setFormData({ ...formData, descricao_curta: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Descrição completa</Label><Textarea rows={4} value={formData.descricao_completa} onChange={(e) => setFormData({ ...formData, descricao_completa: e.target.value })} /></div>
-
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="space-y-2"><Label>Preço</Label><Input type="number" step="0.01" value={formData.preco_sugerido} onChange={(e) => setFormData({ ...formData, preco_sugerido: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Peso (g)</Label><Input type="number" value={formData.peso_gramas} onChange={(e) => setFormData({ ...formData, peso_gramas: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Preparo (min)</Label><Input type="number" value={formData.tempo_preparo_min} onChange={(e) => setFormData({ ...formData, tempo_preparo_min: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Ordem no cardápio</Label><Input type="number" value={formData.ordem_exibicao} onChange={(e) => setFormData({ ...formData, ordem_exibicao: e.target.value })} /></div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Estoque atual</Label><Input type="number" step="0.001" value={formData.estoque_atual} onChange={(e) => setFormData({ ...formData, estoque_atual: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Estoque mínimo</Label><Input type="number" step="0.001" value={formData.estoque_minimo} onChange={(e) => setFormData({ ...formData, estoque_minimo: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Unidade</Label><Input placeholder="un, g, kg, ml" value={formData.unidade_medida} onChange={(e) => setFormData({ ...formData, unidade_medida: e.target.value })} /></div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Imagem do produto</Label>
-              <div className="flex gap-4 items-center">
-                <input type="file" accept="image/*" onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setImageFile(file);
-                  if (file) setImagePreview(URL.createObjectURL(file));
-                }} />
-                {imagePreview && <img src={imagePreview} alt="preview" className="h-20 w-20 object-cover rounded-md border" />}
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Button type="button" variant="secondary" onClick={() => { setDialogOpen(false); setEditing(null); setImageFile(null); setImagePreview(''); }}>Cancelar</Button>
+                <Button type="button" onClick={handleSave}>Salvar</Button>
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between border rounded-lg p-3"><span className="text-sm">Ativo</span><Switch checked={formData.ativo} onCheckedChange={(v) => setFormData({ ...formData, ativo: v })} /></div>
-              <div className="flex items-center justify-between border rounded-lg p-3"><span className="text-sm">Disponível no cardápio</span><Switch checked={formData.ativo_cardapio} onCheckedChange={(v) => setFormData({ ...formData, ativo_cardapio: v })} /></div>
-              <div className="flex items-center justify-between border rounded-lg p-3"><span className="text-sm">Permite observação</span><Switch checked={formData.permite_observacao} onCheckedChange={(v) => setFormData({ ...formData, permite_observacao: v })} /></div>
-              <div className="flex items-center justify-between border rounded-lg p-3"><span className="text-sm">Controla estoque</span><Switch checked={formData.controla_estoque} onCheckedChange={(v) => setFormData({ ...formData, controla_estoque: v })} /></div>
-              <div className="flex items-center justify-between border rounded-lg p-3 md:col-span-2"><span className="text-sm">Destaque no cardápio</span><Switch checked={formData.destaque_cardapio} onCheckedChange={(v) => setFormData({ ...formData, destaque_cardapio: v })} /></div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={saving || uploading}>
-                {(saving || uploading) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Salvar
-              </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      <Dialog open={grupoDialogOpen} onOpenChange={setGrupoDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Novo grupo de opções</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2"><Label>Nome</Label><Input value={grupoForm.nome} onChange={(e) => setGrupoForm({ ...grupoForm, nome: e.target.value })} placeholder="Ex: Tamanho, Borda, Adicionais" /></div>
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select value={grupoForm.tipo_grupo} onValueChange={(v) => setGrupoForm({ ...grupoForm, tipo_grupo: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tamanho">Tamanho</SelectItem>
-                  <SelectItem value="massa">Massa</SelectItem>
-                  <SelectItem value="borda">Borda</SelectItem>
-                  <SelectItem value="adicional">Adicional</SelectItem>
-                  <SelectItem value="opcional">Opcional</SelectItem>
-                </SelectContent>
-              </Select>
+      {optionDialogOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-shell">
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">{editingOption ? 'Editar opção' : 'Nova opção'}</div>
+              </div>
+              <Button variant="ghost" onClick={() => { setOptionDialogOpen(false); setEditingOption(null); }}>Fechar</Button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Mínimo</Label><Input type="number" value={grupoForm.minimo_escolhas} onChange={(e) => setGrupoForm({ ...grupoForm, minimo_escolhas: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Máximo</Label><Input type="number" value={grupoForm.maximo_escolhas} onChange={(e) => setGrupoForm({ ...grupoForm, maximo_escolhas: e.target.value })} /></div>
-            </div>
-            <div className="flex items-center justify-between border rounded-md p-3"><span className="text-sm">Obrigatório</span><Switch checked={grupoForm.obrigatorio} onCheckedChange={(v) => setGrupoForm({ ...grupoForm, obrigatorio: v })} /></div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setGrupoDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={saveGrupo} disabled={saving}>Salvar grupo</Button>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-grid-full">
+                  <Label htmlFor="optionName">Nome da opção</Label>
+                  <Input id="optionName" value={optionForm.nome} onChange={(event) => setOptionForm((prev) => ({ ...prev, nome: event.target.value }))} />
+                </div>
+                <div className="form-grid-full">
+                  <Label htmlFor="optionPrice">Preço adicional</Label>
+                  <Input id="optionPrice" type="number" step="0.01" min="0" value={optionForm.preco_adicional} onChange={(event) => setOptionForm((prev) => ({ ...prev, preco_adicional: event.target.value }))} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <Label htmlFor="optionActive" style={{ minWidth: 100 }}>Ativa</Label>
+                  <input id="optionActive" type="checkbox" checked={optionForm.ativo} onChange={(event) => setOptionForm((prev) => ({ ...prev, ativo: event.target.checked }))} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <Button variant="secondary" onClick={() => { setOptionDialogOpen(false); setEditingOption(null); }}>Cancelar</Button>
+                <Button onClick={handleSaveOption}>{editingOption ? 'Salvar' : 'Criar'}</Button>
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={opcaoDialogOpen} onOpenChange={setOpcaoDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Nova opção</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2"><Label>Nome</Label><Input value={opcaoForm.nome} onChange={(e) => setOpcaoForm({ ...opcaoForm, nome: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Descrição</Label><Input value={opcaoForm.descricao} onChange={(e) => setOpcaoForm({ ...opcaoForm, descricao: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Preço adicional</Label><Input type="number" step="0.01" value={opcaoForm.preco_adicional} onChange={(e) => setOpcaoForm({ ...opcaoForm, preco_adicional: e.target.value })} /></div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpcaoDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={saveOpcao} disabled={saving}>Salvar opção</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

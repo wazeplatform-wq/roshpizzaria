@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Loader2, Plus, Minus, Search, Share2, Home, ClipboardList, ShoppingCart, UtensilsCrossed, X, Instagram, MapPin, MessageCircle, ChevronDown, ChevronUp, Check, ChevronsUpDown, User, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
+
+// CSS inspired by mockup — scoped inline to avoid touching global styles
+const CARDAPIO_CSS = `
+:root{--primary:#ff6b1a;--bg:#0d0a08;--card:#1a1410;--muted:#b8a898}
+body{background:#fff}
+.public-wrap{background:transparent;color:inherit}
+.public-hero{position:relative;overflow:hidden}
+.public-hero img{width:100%;height:100%;object-fit:cover}
+.public-header{position:sticky;top:0;z-index:60;background:var(--primary);color:#fff}
+.public-pill{display:inline-flex;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);margin-right:8px}
+.destaques-scroll{display:flex;gap:14px;overflow-x:auto;padding:8px 0}
+.card-item{background:#fff;border-radius:12px;border:1px solid #f0f0f0;padding:10px;width:160px}
+.prod-list .prod-card{background:#fff;border-radius:12px;padding:12px;border:1px solid #f0f0f0;margin-bottom:12px}
+.sticky-cart{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:80}
+`;
 
 type Product = {
   id: string;
@@ -82,6 +97,7 @@ export default function CardapioPublico() {
   const [cartOpen, setCartOpen] = useState(false);
 
   const CUSTOMER_STORAGE_KEY = `cardapio_customer_${slug || "default"}`;
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   const [customer, setCustomer] = useState(() => {
     try {
@@ -490,10 +506,18 @@ export default function CardapioPublico() {
     />
   );
 
+  // small helper to open product dialog with consistent scroll to top
+  const openProductDialog = (p: Product) => {
+    setSelectedProduct(p);
+    // focus search input when opening
+    setTimeout(() => searchRef.current?.focus(), 80);
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-800 pb-32">
+    <div className="min-h-screen bg-neutral-50 text-neutral-800 pb-32 public-wrap">
+      <style>{CARDAPIO_CSS}</style>
       {/* Header */}
-      <header className="sticky top-0 z-40 shadow-sm" style={{ backgroundColor: primary }}>
+      <header className="public-header" style={{ backgroundColor: primary }}>
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-2 text-white">
           <h1 className="font-bold text-lg sm:text-xl truncate flex-1 tracking-tight">
             {config.nome_loja || "Cardápio Digital"}
@@ -544,6 +568,7 @@ export default function CardapioPublico() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
               <Input
+                ref={searchRef}
                 autoFocus
                 placeholder="Buscar pizza, bebida..."
                 value={search}
@@ -556,7 +581,7 @@ export default function CardapioPublico() {
       </header>
 
       {/* Hero banner */}
-      <div className="relative h-44 sm:h-56 overflow-hidden">
+      <div className="public-hero relative h-44 sm:h-56 overflow-hidden">
         <img
           src={config.banner_url || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1600&q=80"}
           alt="Banner"
@@ -657,25 +682,16 @@ export default function CardapioPublico() {
               <h2 className="text-xl font-extrabold text-neutral-900 tracking-tight">🔥 Os mais pedidos</h2>
               <span className="text-xs text-neutral-500">campeões de venda</span>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
+            <div className="destaques-scroll -mx-4 px-4">
               {topShown.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedProduct(p)}
-                  className="flex-shrink-0 w-36 sm:w-40 text-left group bg-white rounded-2xl shadow-sm hover:shadow-lg border border-neutral-100 overflow-hidden transition-all hover-scale"
-                >
-                  <div className="relative w-full h-28 bg-neutral-100 overflow-hidden">
-                    <ProductImage src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/95 text-amber-600 shadow">
-                      ⭐ POPULAR
-                    </span>
+                <div key={p.id} className="card-item" onClick={() => openProductDialog(p)}>
+                  <div style={{ height: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7', borderRadius: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 44 }}>{p.nome?.slice(0,1) || '🍕'}</span>
                   </div>
-                  <div className="p-2.5">
-                    <div className="text-sm font-bold text-neutral-900 line-clamp-1">{p.nome}</div>
-                    <div className="text-xs text-neutral-500 mt-0.5">A partir de</div>
-                    <div className="text-sm font-extrabold" style={{ color: primary }}>{formatBRL(p.preco_sugerido)}</div>
-                  </div>
-                </button>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{p.nome}</div>
+                  <div style={{ fontSize: 12, color: '#777' }}>A partir de</div>
+                  <div style={{ fontWeight: 800, color: primary }}>{formatBRL(p.preco_sugerido)}</div>
+                </div>
               ))}
             </div>
           </section>

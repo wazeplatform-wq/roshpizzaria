@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart3, TrendingUp, Users, DollarSign, Target, MessageSquare, Calendar, CheckCircle, Bot, Activity, Trophy, XCircle, Download, Share2, Filter, Settings, Eye, PieChart, Clock, Zap, RefreshCw, CalendarDays, UserCheck, AlertTriangle, ArrowUpRight, ArrowDownRight, Megaphone, ExternalLink, Package, Cake, Gift, PartyPopper, Building2, Scale } from "lucide-react";
-import CampaignAnalytics from "@/components/analytics/CampaignAnalytics";
 import LeadsDrilldownModal, { DrilldownFilterType } from "@/components/analytics/LeadsDrilldownModal";
 import { PipelineFinanceiro } from "@/components/analytics/PipelineFinanceiro";
 import { LossReasonsReport } from "@/components/analytics/LossReasonsReport";
@@ -1090,103 +1089,22 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Filtros Globais */}
-      <Card className="border-0 shadow-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filtros Globais
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Aplicados a todas as abas do Analytics
-              </p>
-            </div>
-            <Button onClick={fetchFilteredStats} disabled={reportLoading || communicationLoading || productivityLoading} variant="outline" size="sm">
-              <RefreshCw className={`h-4 w-4 mr-2 ${reportLoading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 items-end flex-wrap">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Período</label>
-              <Select value={globalFilters.period} onValueChange={value => setGlobalFilters(prev => ({
-              ...prev,
-              period: value
-            }))}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todo o período</SelectItem>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Última semana</SelectItem>
-                  <SelectItem value="month">Último mês</SelectItem>
-                  <SelectItem value="quarter">Último trimestre</SelectItem>
-                  <SelectItem value="year">Último ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Responsável</label>
-              <Select value={globalFilters.responsible || "all"} onValueChange={value => setGlobalFilters(prev => ({
-              ...prev,
-              responsible: value === 'all' ? undefined : value
-            }))}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {companyUsers.map(user => <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Canal</label>
-              <Select value={globalFilters.channel || "all"} onValueChange={value => setGlobalFilters(prev => ({
-              ...prev,
-              channel: value === 'all' ? undefined : value
-            }))}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="instagram">Instagram</SelectItem>
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full h-auto p-1 grid-cols-2 sm:grid-cols-5">
-          <TabsTrigger value="overview" className="gap-2 py-3">
+        <TabsList className="grid w-full h-auto p-1 grid-cols-2 sm:grid-cols-4 rounded-3xl bg-slate-100/80 shadow-sm border border-slate-200/80">
+          <TabsTrigger value="overview" className="gap-2 py-3 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-slate-900 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900">
             <Eye className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral PDV</span>
           </TabsTrigger>
-          <TabsTrigger value="vendas" className="gap-2 py-3">
+          <TabsTrigger value="vendas" className="gap-2 py-3 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-slate-900 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">Vendas & Faturamento</span>
           </TabsTrigger>
-          <TabsTrigger value="cardapio" className="gap-2 py-3">
+          <TabsTrigger value="cardapio" className="gap-2 py-3 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-slate-900 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Cardápio Digital</span>
           </TabsTrigger>
-          <TabsTrigger value="campaigns" className="gap-2 py-3">
-            <Megaphone className="h-4 w-4" />
-            <span className="hidden sm:inline">Campanhas</span>
-          </TabsTrigger>
-          <TabsTrigger value="customize" className="gap-2 py-3">
+          <TabsTrigger value="customize" className="gap-2 py-3 rounded-2xl transition-colors duration-200 text-slate-600 hover:text-slate-900 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900">
             <Cake className="h-4 w-4" />
             <span className="hidden sm:inline">Aniversariantes</span>
           </TabsTrigger>
@@ -1205,11 +1123,6 @@ export default function Analytics() {
         {/* Cardápio Digital - vitrine de produtos */}
         <TabsContent value="cardapio" className="space-y-6">
           <ProductsAnalytics userCompanyId={userCompanyId} globalFilters={globalFilters} />
-        </TabsContent>
-
-        {/* Campanhas */}
-        <TabsContent value="campaigns" className="space-y-6">
-          <CampaignAnalytics userCompanyId={userCompanyId} globalFilters={globalFilters} />
         </TabsContent>
 
         {/* Aniversariantes */}

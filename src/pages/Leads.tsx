@@ -11,10 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LeadActionsDialog } from "@/components/leads/LeadActionsDialog";
 import { LeadQuickActions } from "@/components/leads/LeadQuickActions";
 import { LeadTagsDialog } from "@/components/leads/LeadTagsDialog";
-import { TagsManager } from "@/components/leads/TagsManager";
-import { AttachmentsManager } from "@/components/leads/AttachmentsManager";
 import { AniversariantesManager } from "@/components/leads/AniversariantesManager";
-import { LeadsAdvancedFilter } from "@/components/leads/LeadsAdvancedFilter";
 import { NovoLeadDialog } from "@/components/funil/NovoLeadDialog";
 import { EditarLeadDialog } from "@/components/funil/EditarLeadDialog";
 import { ImportarLeadsDialog } from "@/components/funil/ImportarLeadsDialog";
@@ -155,8 +152,8 @@ export default function Leads() {
     if (selectedLeads.size === 0) {
       toast({
         variant: "destructive",
-        title: "Nenhum lead selecionado",
-        description: "Selecione pelo menos um lead para excluir."
+        title: "Nenhum cliente selecionado",
+        description: "Selecione pelo menos um cliente para excluir."
       });
       return;
     }
@@ -191,24 +188,24 @@ export default function Leads() {
       }
       if (deletedCount > 0) {
         toast({
-          title: "Leads excluídos",
-          description: `${deletedCount} leads foram excluídos permanentemente do banco de dados.${errorCount > 0 ? ` (${errorCount} falharam)` : ''}`
+title: "Clientes excluídos",
+        description: `${deletedCount} clientes foram excluídos permanentemente do banco de dados.${errorCount > 0 ? ` (${errorCount} falharam)` : ''}`
         });
 
-        // Atualizar estado local removendo os leads excluídos
+        // Atualizar estado local removendo os clientes excluídos
         setLeads(prev => prev.filter(lead => !selectedLeads.has(lead.id)));
         setSelectedLeads(new Set());
         setShowBulkDeleteDialog(false);
         setSelectionMode(false);
       } else {
-        throw new Error("Nenhum lead foi excluído. Verifique suas permissões.");
+        throw new Error("Nenhum cliente foi excluído. Verifique suas permissões.");
       }
     } catch (error: any) {
       console.error("❌ Erro ao excluir leads em massa:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao excluir leads",
-        description: error?.message || "Não foi possível excluir os leads selecionados."
+        title: "Erro ao excluir clientes",
+        description: error?.message || "Não foi possível excluir os clientes selecionados."
       });
     } finally {
       setBulkProcessing(false);
@@ -232,7 +229,7 @@ export default function Leads() {
       }
       toast({
         title: "Tags adicionadas",
-        description: `Tag "${newTag}" adicionada a ${selectedLeads.size} leads.`
+        description: `Tag "${newTag}" adicionada a ${selectedLeads.size} clientes.`
       });
 
       // Atualizar estado local
@@ -279,8 +276,8 @@ export default function Leads() {
       const funilNome = funis.find(f => f.id === selectedFunilId)?.nome || "";
       const etapaNome = etapas.find(e => e.id === selectedEtapaId)?.nome || "";
       toast({
-        title: "Leads movidos",
-        description: `${selectedLeads.size} leads foram movidos para ${funilNome} > ${etapaNome}.`
+        title: "Clientes movidos",
+        description: `${selectedLeads.size} clientes foram movidos para ${funilNome} > ${etapaNome}.`
       });
 
       // Atualizar estado local
@@ -303,8 +300,8 @@ export default function Leads() {
       console.error("Erro ao mover leads em massa:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao mover leads",
-        description: "Não foi possível mover os leads para o funil."
+        title: "Erro ao mover clientes",
+        description: "Não foi possível mover os clientes para o funil."
       });
     } finally {
       setBulkProcessing(false);
@@ -419,7 +416,7 @@ export default function Leads() {
         toast({
           variant: "destructive",
           title: "Erro de autenticação",
-          description: "Você precisa estar autenticado para gerenciar leads."
+          description: "Você precisa estar autenticado para gerenciar clientes."
         });
         return;
       }
@@ -431,7 +428,7 @@ export default function Leads() {
         toast({
           variant: "destructive",
           title: "Empresa não encontrada",
-          description: "Você precisa estar vinculado a uma empresa para gerenciar leads."
+          description: "Você precisa estar vinculado a uma empresa para gerenciar clientes."
         });
         return;
       }
@@ -644,8 +641,8 @@ export default function Leads() {
       if (filteredLeads.length === 0) {
         toast({
           variant: "destructive",
-          title: "Nenhum lead para exportar",
-          description: "Aplique filtros ou adicione leads antes de exportar."
+          title: "Nenhum cliente para exportar",
+          description: "Aplique filtros ou adicione clientes antes de exportar."
         });
         return;
       }
@@ -672,21 +669,21 @@ export default function Leads() {
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", `leads_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `clientes_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       toast({
         title: "Exportação concluída",
-        description: `${filteredLeads.length} leads exportados com sucesso.`
+        description: `${filteredLeads.length} clientes exportados com sucesso.`
       });
     } catch (error) {
       console.error("Erro ao exportar leads:", error);
       toast({
         variant: "destructive",
         title: "Erro na exportação",
-        description: "Não foi possível exportar os leads. Tente novamente."
+        description: "Não foi possível exportar os clientes. Tente novamente."
       });
     }
   };
@@ -709,7 +706,7 @@ export default function Leads() {
         toast({
           variant: "destructive",
           title: "Acesso negado",
-          description: "Você não tem permissão para excluir este lead."
+          description: "Você não tem permissão para excluir este cliente."
         });
         return;
       }
@@ -720,8 +717,8 @@ export default function Leads() {
         throw error;
       }
       toast({
-        title: "Lead excluído",
-        description: `O lead "${leadParaExcluir.name}" foi excluído com sucesso.`
+        title: "Cliente excluído",
+        description: `O cliente "${leadParaExcluir.name}" foi excluído com sucesso.`
       });
       setLeads(prev => prev.filter(lead => lead.id !== leadParaExcluir.id));
       setLeadParaExcluir(null);
@@ -730,8 +727,8 @@ export default function Leads() {
       console.error("Erro ao excluir lead:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao excluir lead",
-        description: "Não foi possível excluir o lead. Tente novamente."
+        title: "Erro ao excluir cliente",
+        description: "Não foi possível excluir o cliente. Tente novamente."
       });
     }
   };
@@ -886,12 +883,6 @@ export default function Leads() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <TagsManager onTagSelected={setSelectedTag} selectedTag={selectedTag} />
-          <LeadsAdvancedFilter 
-            onApplyFilter={setAdvancedFilterLeadIds} 
-            activeFilter={advancedFilterLeadIds !== null && advancedFilterLeadIds.length > 0}
-          />
-          <AttachmentsManager />
           <AniversariantesManager />
           <Button variant="outline" size="sm" className="md:size-default" onClick={exportarLeads}>
             <Download className="h-4 w-4 md:mr-2" />
@@ -921,40 +912,6 @@ export default function Leads() {
             <Button size="sm" variant={selectedStatus === "novo" ? "default" : "outline"} onClick={() => { setSelectedStatus("novo"); setFilterWithValue(false); setSearchParams({}); }} className="flex-shrink-0">
               Novos
             </Button>
-            <Button 
-              size="sm" 
-              variant={filterWithValue ? "default" : "outline"} 
-              onClick={() => { 
-                setFilterWithValue(!filterWithValue); 
-                if (!filterWithValue) {
-                  setSearchParams({ minValue: '1' });
-                } else {
-                  setSearchParams({});
-                }
-              }} 
-              className="flex-shrink-0"
-            >
-              <DollarSign className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Com Valor</span>
-            </Button>
-            <Button 
-              size="sm" 
-              variant={selectedStatus === "ganho" ? "default" : "outline"} 
-              onClick={() => { setSelectedStatus("ganho"); setFilterWithValue(false); setSearchParams({ status: 'ganho' }); }} 
-              className="flex-shrink-0 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50 data-[state=active]:bg-green-600"
-            >
-              <Trophy className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Fidelizados</span>
-            </Button>
-            <Button 
-              size="sm" 
-              variant={selectedStatus === "perdido" ? "default" : "outline"} 
-              onClick={() => { setSelectedStatus("perdido"); setFilterWithValue(false); setSearchParams({ status: 'perdido' }); }} 
-              className="flex-shrink-0 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-            >
-              <XCircle className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Não comprou</span>
-            </Button>
             <Button size="sm" variant={selectionMode ? "default" : "outline"} onClick={toggleSelectionMode} className={`flex-shrink-0 ${selectionMode ? "bg-primary" : ""}`}>
               <CheckSquare className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Seleção em Massa</span>
@@ -973,7 +930,7 @@ export default function Leads() {
             }
           }} />
               <span className="text-sm font-medium">
-                {selectedLeads.size > 0 ? `${selectedLeads.size} lead(s) selecionado(s)` : "Selecionar todos"}
+                {selectedLeads.size > 0 ? `${selectedLeads.size} cliente(s) selecionado(s)` : "Selecionar todos"}
               </span>
             </div>
             
@@ -1105,7 +1062,7 @@ export default function Leads() {
                 </p>
               </>
             ) : (
-              <p className="text-muted-foreground">Nenhum lead encontrado</p>
+              <p className="text-muted-foreground">Nenhum cliente encontrado</p>
             )}
           </CardContent>
         </Card>}
@@ -1114,13 +1071,13 @@ export default function Leads() {
       <div ref={observerRef} className="flex justify-center py-4">
         {loading && <div className="flex items-center gap-2 text-muted-foreground">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            Carregando leads...
+            Carregando clientes...
           </div>}
         {!loading && hasMore && leads.length > 0 && <div className="text-muted-foreground text-sm">
-            Role para baixo para carregar mais leads
+            Role para baixo para carregar mais clientes
           </div>}
         {!hasMore && leads.length > 0 && <div className="text-muted-foreground text-sm">
-            Todos os {leads.length} leads foram carregados
+            Todos os {leads.length} clientes foram carregados
           </div>}
       </div>
 
@@ -1184,7 +1141,7 @@ export default function Leads() {
       if (!open) {
         setLeadParaConversa(null);
       }
-    }} leadId={leadParaConversa.id} leadName={leadParaConversa.name || "Lead sem nome"} leadPhone={leadParaConversa.phone || leadParaConversa.telefone || undefined} />}
+    }} leadId={leadParaConversa.id} leadName={leadParaConversa.name || "Cliente sem nome"} leadPhone={leadParaConversa.phone || leadParaConversa.telefone || undefined} />}
 
       {/* Dialog de Agendamento */}
       {leadParaAgenda && <AgendaModal open={showAgendaDialog} onOpenChange={open => {
@@ -1237,13 +1194,13 @@ export default function Leads() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão em massa</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedLeads.size} lead(s) selecionado(s)? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir {selectedLeads.size} cliente(s) selecionado(s)? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkProcessing}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmarExclusaoEmMassa} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={bulkProcessing}>
-              {bulkProcessing ? "Excluindo..." : `Excluir ${selectedLeads.size} lead(s)`}
+              {bulkProcessing ? "Excluindo..." : `Excluir ${selectedLeads.size} cliente(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

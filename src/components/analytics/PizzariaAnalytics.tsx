@@ -215,20 +215,22 @@ export function PizzariaAnalytics({ companyId, period }: Props) {
                 const Icon = data.icon;
                 const pct = totalPedidos > 0 ? (data.qtd / totalPedidos) * 100 : 0;
                 return (
-                  <div key={key} className="rounded-lg border p-4 space-y-2">
+                  <div key={key} className="rounded-3xl border border-slate-200/70 bg-slate-50/80 p-5 space-y-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{data.label}</span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span className="text-sm font-medium text-slate-800">{data.label}</span>
                       </div>
                       <Badge variant="secondary">{pct.toFixed(0)}%</Badge>
                     </div>
-                    <div className="text-2xl font-bold">{data.qtd}</div>
-                    <div className="text-sm text-muted-foreground">{fmtBRL(data.valor)}</div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="text-3xl font-semibold text-slate-900">{data.qtd}</div>
+                    <div className="text-sm text-slate-500">{fmtBRL(data.valor)}</div>
+                    <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                       <div
                         className="h-full bg-primary transition-all"
-                        style={{ width: `${Math.max(pct, 2)}%` }}
+                        style={{ width: `${Math.max(pct, 4)}%` }}
                       />
                     </div>
                   </div>
@@ -264,10 +266,10 @@ export function PizzariaAnalytics({ companyId, period }: Props) {
                             {d.qtd} • {fmtBRL(d.valor)}
                           </span>
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                           <div
-                            className="h-full bg-primary"
-                            style={{ width: `${Math.max(pct, 2)}%` }}
+                            className="h-full bg-primary transition-all"
+                            style={{ width: `${Math.max(pct, 6)}%` }}
                           />
                         </div>
                       </div>
@@ -302,10 +304,10 @@ export function PizzariaAnalytics({ companyId, period }: Props) {
                             {d.qtd} • {fmtBRL(d.valor)}
                           </span>
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                           <div
-                            className="h-full bg-primary"
-                            style={{ width: `${Math.max(pct, 2)}%` }}
+                            className="h-full bg-primary transition-all"
+                            style={{ width: `${Math.max(pct, 6)}%` }}
                           />
                         </div>
                       </div>
@@ -335,17 +337,17 @@ export function PizzariaAnalytics({ companyId, period }: Props) {
               {topProdutos.map((p, idx) => (
                 <div
                   key={p.nome}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30"
+                  className="flex items-center justify-between p-4 rounded-3xl border border-slate-200/70 bg-slate-50/80 transition hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                    <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-primary/10 text-primary font-bold text-sm">
                       {idx + 1}
                     </div>
-                    <span className="font-medium">{p.nome}</span>
+                    <span className="font-medium text-slate-800">{p.nome}</span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">{p.qtd}x vendidos</span>
-                    <span className="font-semibold">{fmtBRL(p.valor)}</span>
+                  <div className="flex items-center gap-4 text-sm text-slate-600">
+                    <span>{p.qtd}x vendidos</span>
+                    <span className="font-semibold text-slate-900">{fmtBRL(p.valor)}</span>
                   </div>
                 </div>
               ))}
@@ -404,10 +406,12 @@ function KpiCard({
   icon: any;
 }) {
   return (
-    <Card>
+    <Card className="border border-slate-200/70 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-primary" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>

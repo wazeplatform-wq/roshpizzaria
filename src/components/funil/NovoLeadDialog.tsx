@@ -38,6 +38,8 @@ export function NovoLeadDialog({
 
   const entityLabel = mode === "cliente" ? "Cliente" : mode === "pedido" ? "Pedido" : "Lead";
   const entityLabelLower = entityLabel.toLowerCase();
+  const companyLabel = mode === "cliente" ? "Segmento / Cliente VIP" : "Empresa";
+  const companyPlaceholder = mode === "cliente" ? "Ex: Cliente VIP, Delivery frequente" : "Nome da empresa";
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -379,12 +381,12 @@ export function NovoLeadDialog({
           </div>
 
           <div>
-            <Label htmlFor="company">Empresa</Label>
+            <Label htmlFor="company">{companyLabel}</Label>
             <Input
               id="company"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              placeholder="Nome da empresa"
+              placeholder={companyPlaceholder}
             />
           </div>
 
@@ -430,7 +432,7 @@ export function NovoLeadDialog({
               id="source"
               value={formData.source}
               onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              placeholder="Ex: WhatsApp, Instagram, Indicação"
+              placeholder="Ex: WhatsApp, Instagram, Indicação, Delivery"
             />
           </div>
 
@@ -441,7 +443,7 @@ export function NovoLeadDialog({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder={`Informações adicionais sobre o ${entityLabelLower}`}
+              placeholder={`Informações adicionais sobre o cliente`}
             />
           </div>
 
