@@ -1,31 +1,305 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Loader2, Plus, Minus, Search, Share2, Home, ClipboardList, ShoppingCart, UtensilsCrossed, X, Instagram, MapPin, MessageCircle, ChevronDown, ChevronUp, Check, ChevronsUpDown, User, Star, LogOut } from "lucide-react";
+import { Loader2, User, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
-// CSS inspired by mockup — scoped inline to avoid touching global styles
+// ───────────────────────────────────────────────────────────────
+// CSS extracted from the approved mockup (dark theme, mobile-first)
+// ───────────────────────────────────────────────────────────────
 const CARDAPIO_CSS = `
-:root{--primary:#ff6b1a;--bg:#0d0a08;--card:#1a1410;--muted:#b8a898}
-body{background:#fff}
-.public-wrap{background:transparent;color:inherit}
-.public-hero{position:relative;overflow:hidden}
-.public-hero img{width:100%;height:100%;object-fit:cover}
-.public-header{position:sticky;top:0;z-index:60;background:var(--primary);color:#fff}
-.public-pill{display:inline-flex;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.02);margin-right:8px}
-.destaques-scroll{display:flex;gap:14px;overflow-x:auto;padding:8px 0}
-.card-item{background:#fff;border-radius:12px;border:1px solid #f0f0f0;padding:10px;width:160px}
-.prod-list .prod-card{background:#fff;border-radius:12px;padding:12px;border:1px solid #f0f0f0;margin-bottom:12px}
-.sticky-cart{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:80}
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600;700&display=swap');
+.cardapio-root *{box-sizing:border-box}
+.cardapio-root{
+  --fire:#FF4500;--fire2:#FF6B1A;--fire3:#FFB347;--cream:#FFF8F0;
+  --dark:#0D0A08;--dark2:#1A1410;--dark3:#251E17;--dark4:#322820;
+  --border:rgba(255,180,100,0.12);--border2:rgba(255,180,100,0.22);
+  --text:#F5EAD8;--text2:#B8A898;--text3:#7A6A5A;
+  --gold:#D4A853;--gold2:#F0C878;--green:#2EC98A;
+  --font-display:'Playfair Display',serif;--font:'Outfit',sans-serif;
+  background:var(--dark);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;
+  min-height:100vh;overflow-x:hidden;position:relative;
+}
+.cardapio-root::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.6}
+.cardapio-root img{display:block}
+
+.c-header{position:sticky;top:0;z-index:100;background:rgba(13,10,8,0.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);padding:0 16px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.c-logo-wrap{display:flex;align-items:center;gap:9px;min-width:0}
+.c-logo-flame{font-size:22px;filter:drop-shadow(0 0 8px rgba(255,107,26,.7))}
+.c-logo-text{font-family:var(--font-display);font-size:18px;font-weight:700;
+  background:linear-gradient(135deg,var(--fire3),var(--fire2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
+.c-header-actions{display:flex;gap:6px;align-items:center}
+.c-icon-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;
+  transition:all .2s;text-decoration:none;flex-shrink:0}
+.c-icon-btn:hover{background:rgba(255,107,26,.15);border-color:rgba(255,107,26,.4);color:var(--fire2)}
+.c-cart-btn{display:flex;align-items:center;gap:8px;background:var(--fire);border:none;border-radius:100px;
+  padding:8px 14px;color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .2s;box-shadow:0 4px 20px rgba(255,69,0,.35)}
+.c-cart-btn:hover{background:var(--fire2)}
+.c-cart-count{background:rgba(255,255,255,.25);border-radius:100px;padding:1px 7px;font-size:12px;font-weight:700}
+
+.c-hero{position:relative;overflow:hidden;min-height:340px;display:flex;align-items:flex-end}
+.c-hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a0a00 0%,#2d1200 50%,#0d0a08 100%)}
+.c-hero-blur{position:absolute;right:-60px;top:-40px;width:420px;height:420px;
+  background:radial-gradient(circle,rgba(255,107,26,.18) 0%,transparent 65%);border-radius:50%}
+.c-hero-glow{position:absolute;left:10%;bottom:0;width:280px;height:120px;
+  background:radial-gradient(ellipse,rgba(255,69,0,.2) 0%,transparent 70%)}
+.c-hero-emoji{position:absolute;right:4%;top:50%;transform:translateY(-50%);
+  font-size:clamp(110px,22vw,190px);filter:drop-shadow(0 0 40px rgba(255,107,26,.5));
+  animation:c-float 4s ease-in-out infinite;user-select:none;pointer-events:none}
+@keyframes c-float{0%,100%{transform:translateY(-50%) rotate(-5deg)}50%{transform:translateY(calc(-50% - 14px)) rotate(2deg)}}
+.c-hero-content{position:relative;z-index:2;padding:32px 20px 36px;max-width:560px}
+.c-hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,69,0,.15);
+  border:1px solid rgba(255,69,0,.35);border-radius:100px;padding:5px 12px;
+  font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fire2);margin-bottom:16px}
+.c-hero-badge i{width:7px;height:7px;background:var(--green);border-radius:50%;animation:c-pulse 1.5s ease-in-out infinite;display:inline-block}
+@keyframes c-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
+.c-hero-title{font-family:var(--font-display);font-size:clamp(30px,7vw,52px);font-weight:900;line-height:1.05;letter-spacing:-1.5px;margin-bottom:12px}
+.c-hero-title em{font-style:italic;background:linear-gradient(135deg,var(--fire3),var(--fire));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.c-hero-sub{color:var(--text2);font-size:14px;font-weight:300;margin-bottom:20px;max-width:340px;line-height:1.65}
+.c-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.c-stat-val{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--fire2)}
+.c-stat-lbl{font-size:10px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+
+.c-status-bar{background:var(--dark2);border-bottom:1px solid var(--border);padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:relative;z-index:1}
+.c-status-open{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.c-dot-green{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);
+  flex-shrink:0;animation:c-pulse 1.8s ease-in-out infinite;display:inline-block}
+.c-status-chips{display:flex;gap:6px;flex-wrap:wrap}
+.c-chip{font-size:11.5px;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);color:var(--text2);white-space:nowrap}
+.c-chip.hot{background:rgba(255,69,0,.1);border-color:rgba(255,69,0,.3);color:var(--fire2)}
+
+.c-search-wrap{padding:12px 16px;background:var(--dark);border-bottom:1px solid var(--border);position:relative;z-index:1}
+.c-search-inner{max-width:600px;margin:0 auto;position:relative}
+.c-search-input{width:100%;background:var(--dark3);border:1.5px solid var(--border2);border-radius:100px;
+  color:var(--text);font-family:var(--font);font-size:14px;padding:11px 18px 11px 42px;outline:none;transition:all .2s}
+.c-search-input:focus{border-color:var(--fire2);box-shadow:0 0 0 4px rgba(255,107,26,.12)}
+.c-search-input::placeholder{color:var(--text3)}
+.c-search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+
+.c-nav-pills{overflow-x:auto;scrollbar-width:none;padding:12px 16px;display:flex;gap:7px;
+  border-bottom:1px solid var(--border);background:var(--dark);position:sticky;top:60px;z-index:90}
+.c-nav-pills::-webkit-scrollbar{display:none}
+.c-pill{flex-shrink:0;padding:7px 15px;border-radius:100px;border:1.5px solid var(--border);
+  background:transparent;font-family:var(--font);font-size:12.5px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all .18s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.c-pill:hover{border-color:var(--border2);color:var(--text)}
+.c-pill.active{background:var(--fire);border-color:var(--fire);color:#fff;font-weight:600;box-shadow:0 4px 16px rgba(255,69,0,.3)}
+.c-pill-count{background:rgba(255,255,255,.2);border-radius:100px;padding:0 6px;font-size:10.5px;font-weight:700}
+
+.c-main{max-width:900px;margin:0 auto;padding:22px 16px 140px;position:relative;z-index:1}
+.c-section-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;gap:10px}
+.c-section-title{font-family:var(--font-display);font-size:20px;font-weight:700;letter-spacing:-.5px}
+.c-section-sub{font-size:11px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+
+.c-destaques-scroll{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;
+  padding:0 16px 6px;margin:0 -16px}
+.c-destaques-scroll::-webkit-scrollbar{display:none}
+.c-destaque-card{flex-shrink:0;width:150px;background:var(--dark2);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;cursor:pointer;transition:all .22s;position:relative}
+.c-destaque-card:hover{transform:translateY(-3px);border-color:rgba(255,107,26,.4);
+  box-shadow:0 10px 28px rgba(0,0,0,.5)}
+.c-destaque-img{width:100%;height:100px;object-fit:cover;background:var(--dark3);transition:transform .4s}
+.c-destaque-img-ph{width:100%;height:100px;display:flex;align-items:center;justify-content:center;font-size:42px;
+  background:repeating-linear-gradient(45deg,var(--dark3) 0,var(--dark3) 10px,var(--dark4) 10px,var(--dark4) 20px)}
+.c-destaque-card:hover .c-destaque-img{transform:scale(1.08)}
+.c-destaque-badge{position:absolute;top:8px;left:8px;background:var(--fire);color:#fff;font-size:9px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:100px}
+.c-destaque-body{padding:9px 11px}
+.c-destaque-name{font-size:12.5px;font-weight:600;line-height:1.3;margin-bottom:4px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text)}
+.c-destaque-price{font-size:14px;font-weight:700;background:linear-gradient(135deg,var(--fire3),var(--fire2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.c-category-section{margin-bottom:34px;scroll-margin-top:140px}
+.c-cat-label{font-family:var(--font-display);font-size:17px;font-weight:700;letter-spacing:-.3px;
+  margin-bottom:13px;padding-bottom:10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px}
+.c-cat-label small{font-size:12px;color:var(--text3);font-family:var(--font);font-weight:400}
+.c-prod-list{display:flex;flex-direction:column;gap:10px}
+.c-prod-item{background:var(--dark2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  display:flex;cursor:pointer;transition:all .2s;position:relative;text-align:left;width:100%;
+  font-family:inherit;color:inherit;padding:0}
+.c-prod-item:hover{border-color:rgba(255,107,26,.35);box-shadow:0 6px 24px rgba(0,0,0,.4);transform:translateX(3px)}
+.c-prod-info{flex:1;padding:14px;min-width:0;display:flex;flex-direction:column;gap:5px}
+.c-prod-name{font-size:14.5px;font-weight:600;line-height:1.3;color:var(--text)}
+.c-prod-desc{font-size:12px;color:var(--text2);line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.c-prod-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.c-prod-price-from{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.c-prod-price{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--fire3),var(--fire));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+.c-half-badge{background:rgba(255,179,71,.12);color:var(--fire3);border:1px solid rgba(255,179,71,.3);
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;white-space:nowrap}
+.c-prod-img-wrap{width:100px;flex-shrink:0;position:relative;overflow:hidden;background:var(--dark3)}
+.c-prod-img{width:100%;height:100%;object-fit:cover;min-height:100px;transition:transform .4s}
+.c-prod-item:hover .c-prod-img{transform:scale(1.1)}
+.c-prod-img-ph{width:100%;height:100%;min-height:100px;display:flex;align-items:center;justify-content:center;
+  font-size:38px;background:repeating-linear-gradient(45deg,var(--dark3) 0,var(--dark3) 10px,var(--dark4) 10px,var(--dark4) 20px)}
+.c-add-circle{position:absolute;bottom:7px;right:7px;width:30px;height:30px;border-radius:50%;
+  background:var(--fire);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:300;box-shadow:0 2px 10px rgba(255,69,0,.5);line-height:1}
+
+/* MODAL */
+.c-modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);
+  display:flex;align-items:flex-end;justify-content:center;animation:c-fade .25s ease}
+@keyframes c-fade{from{opacity:0}to{opacity:1}}
+.c-modal{background:var(--dark2);border:1px solid var(--border2);border-bottom:none;
+  border-radius:22px 22px 0 0;width:100%;max-width:540px;max-height:94vh;overflow-y:auto;
+  scrollbar-width:thin;animation:c-slideup .3s cubic-bezier(.32,0,.15,1);color:var(--text);font-family:var(--font)}
+@keyframes c-slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.c-modal-img{width:100%;height:200px;object-fit:cover;flex-shrink:0}
+.c-modal-img-ph{width:100%;height:160px;display:flex;align-items:center;justify-content:center;font-size:72px;
+  background:linear-gradient(135deg,var(--dark3),var(--dark4))}
+.c-modal-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:none;color:#fff;font-size:17px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
+.c-modal-body{padding:18px}
+.c-modal-name{font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px;line-height:1.2}
+.c-modal-desc{color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:14px}
+.c-modal-price{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--fire3),var(--fire));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:18px}
+.c-sub2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fire2);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.c-sub2 .c-hint{color:var(--text3);font-weight:400;font-size:10.5px;letter-spacing:.02em;text-transform:none}
+
+.c-sizes-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:18px}
+@media(max-width:480px){.c-sizes-grid{grid-template-columns:repeat(3,1fr)}}
+.c-size-btn{border:2px solid var(--border2);border-radius:11px;background:transparent;padding:8px 4px;
+  text-align:center;cursor:pointer;transition:all .18s;font-family:var(--font);color:var(--text)}
+.c-size-btn:hover{border-color:rgba(255,107,26,.4);background:rgba(255,107,26,.06)}
+.c-size-btn.active{border-color:var(--fire);background:rgba(255,69,0,.12);box-shadow:0 0 0 3px rgba(255,69,0,.12)}
+.c-size-name{font-size:11.5px;font-weight:700;margin-bottom:2px}
+.c-size-info{font-size:9.5px;color:var(--text3);line-height:1.3}
+.c-size-price{font-size:11.5px;font-weight:700;color:var(--fire2);margin-top:3px}
+
+.c-flavor-search{background:var(--dark3);border:1.5px solid var(--border2);border-radius:10px;
+  padding:10px 13px;color:var(--text);font-family:var(--font);font-size:13px;width:100%;outline:none;margin-bottom:10px}
+.c-flavor-search:focus{border-color:var(--fire2)}
+.c-flavor-list{max-height:200px;overflow-y:auto;scrollbar-width:thin;display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.c-flavor-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;
+  background:var(--dark3);border:1.5px solid var(--border);cursor:pointer;transition:all .15s;
+  font-family:inherit;color:inherit;text-align:left;width:100%}
+.c-flavor-item:hover{border-color:rgba(255,107,26,.35);background:rgba(255,107,26,.06)}
+.c-flavor-item.selected{border-color:var(--fire);background:rgba(255,69,0,.1)}
+.c-flavor-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border2);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.c-flavor-item.selected .c-flavor-check{background:var(--fire);border-color:var(--fire)}
+.c-flavor-text{flex:1;min-width:0}
+.c-flavor-name{font-size:13px;font-weight:600;line-height:1.2;color:var(--text)}
+.c-flavor-desc{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-flavor-price-tag{font-size:11.5px;font-weight:700;color:var(--fire2);flex-shrink:0}
+
+.c-bordas-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+.c-borda-btn{padding:10px 11px;border-radius:10px;border:1.5px solid var(--border);background:transparent;
+  cursor:pointer;text-align:left;transition:all .15s;font-family:var(--font);color:var(--text)}
+.c-borda-btn:hover{border-color:rgba(255,107,26,.35)}
+.c-borda-btn.active{border-color:var(--fire);background:rgba(255,69,0,.1)}
+.c-borda-name{font-size:12.5px;font-weight:600}
+.c-borda-price{font-size:10.5px;color:var(--fire2);margin-top:2px;font-weight:600}
+
+.c-obs-input{width:100%;background:var(--dark3);border:1.5px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:var(--font);font-size:13px;padding:10px 13px;resize:none;outline:none}
+.c-obs-input:focus{border-color:var(--fire2)}
+.c-obs-input::placeholder{color:var(--text3)}
+
+.c-modal-footer{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--border);
+  background:var(--dark2);position:sticky;bottom:0}
+.c-qty-ctrl{display:flex;align-items:center;gap:6px}
+.c-qty-btn{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--border2);background:transparent;
+  color:var(--text);font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+.c-qty-btn:hover{border-color:var(--fire);background:rgba(255,69,0,.1);color:var(--fire2)}
+.c-qty-val{font-size:16px;font-weight:700;min-width:24px;text-align:center}
+.c-add-btn{flex:1;height:46px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--fire2),var(--fire));color:#fff;font-family:var(--font);
+  font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(255,69,0,.4);
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.c-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(255,69,0,.5)}
+.c-add-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* CART DRAWER */
+.c-cart-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);animation:c-fade .25s}
+.c-cart-drawer{position:fixed;bottom:0;right:0;left:0;top:0;max-width:460px;margin-left:auto;
+  background:var(--dark2);border-left:1px solid var(--border2);z-index:301;display:flex;flex-direction:column;
+  animation:c-slidex .3s cubic-bezier(.32,0,.15,1);color:var(--text);font-family:var(--font)}
+@keyframes c-slidex{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.c-cart-head{padding:18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;background:var(--dark2)}
+.c-cart-title{font-family:var(--font-display);font-size:19px;font-weight:700}
+.c-cart-body{flex:1;overflow-y:auto;padding:14px 18px;scrollbar-width:thin}
+.c-cart-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.c-cart-item-info{flex:1;min-width:0}
+.c-cart-item-name{font-size:13.5px;font-weight:600;line-height:1.3;margin-bottom:3px;color:var(--text)}
+.c-cart-item-obs{font-size:11.5px;color:var(--text3);margin-bottom:6px}
+.c-cart-item-price{font-size:14px;font-weight:700;color:var(--fire2)}
+.c-cq-wrap{display:flex;align-items:center;gap:6px;margin-top:7px}
+.c-cq-btn{width:26px;height:26px;border-radius:8px;border:1px solid var(--border2);background:transparent;
+  color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+.c-cq-btn:hover{border-color:var(--fire);color:var(--fire2)}
+.c-cq-val{font-size:13px;font-weight:600;min-width:18px;text-align:center}
+
+.c-empty-cart{text-align:center;padding:50px 20px}
+.c-empty-icon{font-size:56px;margin-bottom:12px;opacity:.4}
+.c-empty-text{color:var(--text3);font-size:14px}
+
+.c-cart-form{padding:14px 18px;border-top:1px solid var(--border);background:var(--dark2)}
+.c-form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px}
+.c-form-field{display:flex;flex-direction:column;gap:5px}
+.c-form-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3)}
+.c-form-input,.c-form-textarea,.c-form-select{background:var(--dark3);border:1.5px solid var(--border);
+  border-radius:10px;color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;
+  outline:none;width:100%}
+.c-form-input:focus,.c-form-textarea:focus,.c-form-select:focus{border-color:var(--fire2)}
+.c-form-input::placeholder,.c-form-textarea::placeholder{color:var(--text3)}
+.c-form-textarea{resize:none}
+.c-form-select{cursor:pointer}
+
+.c-total-box{background:var(--dark3);border-radius:12px;padding:13px;margin-bottom:13px}
+.c-total-row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text2);margin-bottom:5px}
+.c-total-final{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding-top:7px;border-top:1px solid var(--border);color:var(--text)}
+.c-total-val{color:var(--fire2)}
+
+.c-submit-btn{width:100%;height:50px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--fire2),var(--fire));color:#fff;font-family:var(--font);
+  font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(255,69,0,.4);
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.c-submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 32px rgba(255,69,0,.5)}
+.c-submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* STICKY CART */
+.c-sticky-cart{position:fixed;bottom:0;inset-inline:0;z-index:99;padding:12px 14px;
+  background:linear-gradient(transparent,rgba(13,10,8,.97) 35%);pointer-events:none}
+.c-sticky-cart-btn{pointer-events:all;width:100%;max-width:500px;margin:0 auto;display:flex;
+  height:54px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--fire2),var(--fire));
+  color:#fff;font-family:var(--font);font-size:14.5px;font-weight:700;cursor:pointer;
+  box-shadow:0 6px 28px rgba(255,69,0,.45);align-items:center;justify-content:space-between;padding:0 16px}
+.c-cart-left{display:flex;align-items:center;gap:10px}
+.c-cart-pill{background:rgba(255,255,255,.25);border-radius:100px;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700}
+
+.c-wa-btn{position:fixed;right:16px;bottom:84px;z-index:98;width:50px;height:50px;border-radius:50%;
+  background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:22px;text-decoration:none;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:transform .2s}
+.c-wa-btn:hover{transform:scale(1.1)}
+
+@keyframes c-fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.c-fade-up{animation:c-fadeUp .4s ease both}
+
+@media(max-width:500px){
+  .c-destaque-card{width:140px}
+  .c-hero-emoji{opacity:.85}
+  .c-hero-content{padding-right:140px}
+}
 `;
 
 type Product = {
@@ -61,14 +335,22 @@ type StoreConfig = {
   aberto?: boolean;
 };
 
-type CartItem = {
-  product: Product;
-  quantity: number;
-  observations: string;
-};
+type CartItem = { product: Product; quantity: number; observations: string };
 
 const formatBRL = (value: number) =>
   Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const categoryEmoji = (cat: string) => {
+  const c = cat.toLowerCase();
+  if (c.includes("tradicional")) return "🍕";
+  if (c.includes("especi")) return "✨";
+  if (c.includes("doce")) return "🍫";
+  if (c.includes("combo")) return "🎁";
+  if (c.includes("bebida")) return "🥤";
+  if (c.includes("salgad")) return "🥟";
+  if (c.includes("burger") || c.includes("hambur")) return "🍔";
+  return "🍽️";
+};
 
 export default function CardapioPublico() {
   const { slug } = useParams<{ slug: string }>();
@@ -81,20 +363,17 @@ export default function CardapioPublico() {
   const [pizzaBordas, setPizzaBordas] = useState<Array<{ id: string; nome: string; descricao?: string | null; ordem?: number }>>([]);
   const [pizzaBordaPrecos, setPizzaBordaPrecos] = useState<Array<{ borda_id: string; tamanho_id: string; preco: number }>>([]);
   const [selectedBordaId, setSelectedBordaId] = useState<string>("");
-  const [drinkSuggestionOpen, setDrinkSuggestionOpen] = useState(false);
-  const [skipDrinkPromptAtCheckout, setSkipDrinkPromptAtCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedObs, setSelectedObs] = useState("");
   const [selectedQty, setSelectedQty] = useState(1);
   const [extraFlavors, setExtraFlavors] = useState<string[]>([]);
-  const [openFlavorPicker, setOpenFlavorPicker] = useState<number | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const PREVIEW_LIMIT = 4;
+  const [flavorSearch, setFlavorSearch] = useState("");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [activePill, setActivePill] = useState<string>("destaques");
 
   const CUSTOMER_STORAGE_KEY = `cardapio_customer_${slug || "default"}`;
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -103,25 +382,18 @@ export default function CardapioPublico() {
     try {
       const saved = typeof window !== "undefined" ? localStorage.getItem(`cardapio_customer_${slug || "default"}`) : null;
       if (saved) {
-        const parsed = JSON.parse(saved);
+        const p = JSON.parse(saved);
         return {
-          nome: parsed.nome || "",
-          telefone: parsed.telefone || "",
-          tipo_atendimento: parsed.tipo_atendimento || "entrega",
-          forma_pagamento: parsed.forma_pagamento || "pix",
+          nome: p.nome || "",
+          telefone: p.telefone || "",
+          tipo_atendimento: p.tipo_atendimento || "entrega",
+          forma_pagamento: p.forma_pagamento || "pix",
           observacoes: "",
-          endereco: parsed.endereco || "",
+          endereco: p.endereco || "",
         };
       }
     } catch {/* ignore */}
-    return {
-      nome: "",
-      telefone: "",
-      tipo_atendimento: "entrega",
-      forma_pagamento: "pix",
-      observacoes: "",
-      endereco: "",
-    };
+    return { nome: "", telefone: "", tipo_atendimento: "entrega", forma_pagamento: "pix", observacoes: "", endereco: "" };
   });
 
   const [accountOpen, setAccountOpen] = useState(false);
@@ -137,10 +409,7 @@ export default function CardapioPublico() {
           body: { action: "menu", slug },
         });
         if (error) throw error;
-        if (!data?.success) {
-          setNotFound(true);
-          return;
-        }
+        if (!data?.success) { setNotFound(true); return; }
         setConfig(data.store || {});
         setProducts(data.products || []);
         setPizzaSizes(data.pizzaSizes || []);
@@ -156,13 +425,11 @@ export default function CardapioPublico() {
     load();
   }, [slug]);
 
-  const primary = config.cor_primaria || "#1aa3ff";
-
   const isPizzaProduct = (product?: Product | null) => {
     if (!product) return false;
-    const nome = (product.nome || "").toLowerCase();
-    const categoria = (product.categoria || "").toLowerCase();
-    return !!product.permite_meio_a_meio || nome.includes("pizza") || categoria.includes("pizza");
+    const n = (product.nome || "").toLowerCase();
+    const c = (product.categoria || "").toLowerCase();
+    return !!product.permite_meio_a_meio || n.includes("pizza") || c.includes("pizza");
   };
 
   const filteredProducts = useMemo(() => {
@@ -172,6 +439,7 @@ export default function CardapioPublico() {
       (p) =>
         p.nome.toLowerCase().includes(q) ||
         (p.descricao_curta || "").toLowerCase().includes(q) ||
+        (p.descricao || "").toLowerCase().includes(q) ||
         (p.categoria || "").toLowerCase().includes(q)
     );
   }, [products, search]);
@@ -182,7 +450,7 @@ export default function CardapioPublico() {
   );
 
   const destaques = useMemo(
-    () => products.filter((p) => p.destaque_cardapio).slice(0, 8),
+    () => products.filter((p) => p.destaque_cardapio).slice(0, 10),
     [products]
   );
   const topShown = destaques.length > 0 ? destaques : products.slice(0, 8);
@@ -195,24 +463,20 @@ export default function CardapioPublico() {
   const deliveryFee = customer.tipo_atendimento === "entrega" ? Number(config.taxa_entrega || 0) : 0;
   const total = subtotal + deliveryFee;
 
-  // Tamanhos vindos do banco; fallback para defaults se a empresa não cadastrou nenhum
   const DEFAULT_SIZES = [
-    { id: "brotinho", label: "Brotinho", multiplier: 0.625, maxFlavors: 1, slices: 1, descricao: "Pizza com 1 sabor e 1 fatia" },
-    { id: "pequena", label: "Pequena", multiplier: 1, maxFlavors: 2, slices: 4, descricao: "Pizza com até 2 sabores e 4 fatias" },
-    { id: "media", label: "Média", multiplier: 1.343, maxFlavors: 2, slices: 6, descricao: "Pizza com até 2 sabores e 6 fatias" },
-    { id: "grande", label: "Grande", multiplier: 1.5, maxFlavors: 3, slices: 8, descricao: "Pizza com até 3 sabores e 8 fatias" },
-    { id: "gigante", label: "Gigante", multiplier: 1.875, maxFlavors: 3, slices: 12, descricao: "Pizza com até 3 sabores e 12 fatias" },
+    { id: "brotinho", label: "Brotinho", multiplier: 0.625, maxFlavors: 1, slices: 4, descricao: "1 sabor" },
+    { id: "pequena", label: "Pequena", multiplier: 1, maxFlavors: 2, slices: 6, descricao: "Até 2 sabores" },
+    { id: "media", label: "Média", multiplier: 1.343, maxFlavors: 2, slices: 8, descricao: "Até 2 sabores" },
+    { id: "grande", label: "Grande", multiplier: 1.5, maxFlavors: 3, slices: 10, descricao: "Até 3 sabores" },
+    { id: "gigante", label: "Gigante", multiplier: 1.875, maxFlavors: 4, slices: 12, descricao: "Até 4 sabores" },
   ];
 
   const SIZE_OPTIONS = useMemo(() => {
     if (pizzaSizes.length > 0) {
       return pizzaSizes.map((s) => ({
-        id: s.slug,
-        tamanhoId: s.id,
-        label: s.nome,
+        id: s.slug, tamanhoId: s.id, label: s.nome,
         multiplier: Number(s.multiplicador) || 1,
-        maxFlavors: s.max_sabores || 1,
-        slices: s.fatias || 1,
+        maxFlavors: s.max_sabores || 1, slices: s.fatias || 1,
         descricao: s.descricao || "",
       }));
     }
@@ -221,70 +485,37 @@ export default function CardapioPublico() {
 
   useEffect(() => {
     if (!selectedProduct) return;
-
+    setFlavorSearch("");
     if (isPizzaProduct(selectedProduct)) {
-      setSelectedSize("");
-      setExtraFlavors([]);
-      setSelectedBordaId("");
+      setSelectedSize(""); setExtraFlavors([]); setSelectedBordaId("");
       return;
     }
-
     if (SIZE_OPTIONS.length > 0 && !SIZE_OPTIONS.find((s) => s.id === selectedSize)) {
       setSelectedSize(SIZE_OPTIONS[Math.min(1, SIZE_OPTIONS.length - 1)].id);
     }
-  }, [SIZE_OPTIONS, selectedProduct]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProduct]);
 
-  const currentSize = useMemo(
-    () => SIZE_OPTIONS.find((s) => s.id === selectedSize) || SIZE_OPTIONS[0],
-    [SIZE_OPTIONS, selectedSize]
-  );
-
-  const selectedPizzaSize = selectedSize
-    ? SIZE_OPTIONS.find((s) => s.id === selectedSize)
-    : undefined;
+  const selectedPizzaSize = selectedSize ? SIZE_OPTIONS.find((s) => s.id === selectedSize) : undefined;
 
   const getBordaPriceForSize = (bordaId: string, tamanhoId: string) => {
     const p = pizzaBordaPrecos.find((x) => x.borda_id === bordaId && x.tamanho_id === tamanhoId);
     return Number(p?.preco || 0);
   };
-
   const selectedBorda = pizzaBordas.find((b) => b.id === selectedBordaId);
-  const selectedBordaPrice = selectedBorda && selectedPizzaSize?.tamanhoId
-    ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId)
-    : 0;
 
-  // Lista de bebidas disponíveis (categoria contém "bebida" ou "bebidas")
-  const drinkProducts = useMemo(
-    () => products.filter((p) => {
-      const cat = (p.categoria || "").toLowerCase();
-      return cat.includes("bebida");
-    }),
-    [products]
-  );
-
-  // Determina se o carrinho contém bebida
-  const cartHasDrink = useMemo(
-    () => cart.some((item) => {
-      const cat = (item.product.categoria || "").toLowerCase();
-      return cat.includes("bebida");
-    }),
-    [cart]
-  );
-
-  // Calcula o preço final de uma pizza considerando tamanho e múltiplos sabores (média)
   const computePizzaPrice = (mainProduct: Product, extraIds: string[], sizeMultiplier: number) => {
-    const basePrices = [Number(mainProduct.preco_sugerido || 0)];
+    const prices = [Number(mainProduct.preco_sugerido || 0)];
     extraIds.forEach((id) => {
-      const flavor = products.find((p) => p.id === id);
-      if (flavor) basePrices.push(Number(flavor.preco_sugerido || 0));
+      const f = products.find((p) => p.id === id);
+      if (f) prices.push(Number(f.preco_sugerido || 0));
     });
-    const avg = basePrices.reduce((a, b) => a + b, 0) / basePrices.length;
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
     return Math.round(avg * sizeMultiplier * 100) / 100;
   };
 
   const addToCart = () => {
     if (!selectedProduct) return;
-
     let productToAdd: Product = selectedProduct;
     let obs = selectedObs;
     const isPizza = isPizzaProduct(selectedProduct);
@@ -296,139 +527,76 @@ export default function CardapioPublico() {
 
     if (isPizza && selectedPizzaSize) {
       const validExtras = extraFlavors.filter(Boolean).slice(0, selectedPizzaSize.maxFlavors - 1);
-      const flavorObjs = validExtras
-        .map((id) => products.find((p) => p.id === id))
-        .filter((p): p is Product => !!p);
+      const flavorObjs = validExtras.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => !!p);
       const basePrice = computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier);
-      const bordaPrice = selectedBorda && selectedPizzaSize.tamanhoId
-        ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId)
-        : 0;
+      const bordaPrice = selectedBorda && selectedPizzaSize.tamanhoId ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId) : 0;
       const finalPrice = Math.round((basePrice + bordaPrice) * 100) / 100;
       const allNames = [selectedProduct.nome, ...flavorObjs.map((f) => f.nome)];
       const totalFlavors = allNames.length;
-      const fraction = totalFlavors === 2 ? "½" : totalFlavors === 3 ? "⅓" : "";
-      const baseName =
-        totalFlavors === 1
-          ? `${selectedProduct.nome} (${selectedPizzaSize.label})`
-          : `${allNames.map((n) => `${fraction} ${n}`).join(" / ")} (${selectedPizzaSize.label})`;
+      const fraction = totalFlavors === 2 ? "½" : totalFlavors === 3 ? "⅓" : totalFlavors === 4 ? "¼" : "";
+      const baseName = totalFlavors === 1
+        ? `${selectedProduct.nome} (${selectedPizzaSize.label})`
+        : `${allNames.map((n) => `${fraction} ${n}`).join(" / ")} (${selectedPizzaSize.label})`;
       const composedName = selectedBorda ? `${baseName} • Borda ${selectedBorda.nome}` : baseName;
       productToAdd = {
         ...selectedProduct,
         id: `${selectedProduct.id}__${selectedPizzaSize.id}__${validExtras.join("_")}__${selectedBorda?.id || "noborda"}`,
-        nome: composedName,
-        preco_sugerido: finalPrice,
+        nome: composedName, preco_sugerido: finalPrice,
       };
-      if (totalFlavors > 1) {
-        obs = obs ? `${totalFlavors} sabores. ${obs}` : `${totalFlavors} sabores`;
-      }
-      if (selectedBorda) {
-        obs = obs ? `Borda ${selectedBorda.nome}. ${obs}` : `Borda ${selectedBorda.nome}`;
-      }
+      if (totalFlavors > 1) obs = obs ? `${totalFlavors} sabores. ${obs}` : `${totalFlavors} sabores`;
+      if (selectedBorda) obs = obs ? `Borda ${selectedBorda.nome}. ${obs}` : `Borda ${selectedBorda.nome}`;
     }
 
     setCart((prev) => {
-      const existing = prev.find(
-        (item) => item.product.id === productToAdd.id && item.observations === obs
-      );
-      if (existing) {
-        return prev.map((item) =>
-          item === existing ? { ...item, quantity: item.quantity + selectedQty } : item
-        );
-      }
+      const existing = prev.find((it) => it.product.id === productToAdd.id && it.observations === obs);
+      if (existing) return prev.map((it) => it === existing ? { ...it, quantity: it.quantity + selectedQty } : it);
       return [...prev, { product: productToAdd, quantity: selectedQty, observations: obs.trim() }];
     });
-    const wasPizza = isPizzaProduct(selectedProduct);
     setSelectedProduct(null);
-    setSelectedObs("");
-    setSelectedQty(1);
-    setExtraFlavors([]);
-    setSelectedSize("");
-    setSelectedBordaId("");
+    setSelectedObs(""); setSelectedQty(1); setExtraFlavors([]); setSelectedSize(""); setSelectedBordaId("");
     toast.success("Item adicionado ao carrinho");
-    // Sugerir bebida quando adicionar pizza e ainda não há bebida no carrinho
-    if (wasPizza && drinkProducts.length > 0 && !cartHasDrink) {
-      setTimeout(() => setDrinkSuggestionOpen(true), 300);
-    }
   };
 
   const updateQuantity = (index: number, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item, i) => (i === index ? { ...item, quantity: item.quantity + delta } : item))
-        .filter((item) => item.quantity > 0)
-    );
+    setCart((prev) => prev.map((it, i) => i === index ? { ...it, quantity: it.quantity + delta } : it).filter((it) => it.quantity > 0));
   };
 
   const submitOrder = async () => {
-    if (!cart.length) {
-      toast.error("Adicione itens ao carrinho");
-      return;
-    }
-    if (!customer.nome.trim() || !customer.telefone.trim()) {
-      toast.error("Informe nome e telefone");
-      return;
-    }
-    if (customer.tipo_atendimento === "entrega" && !customer.endereco.trim()) {
-      toast.error("Informe o endereço de entrega");
-      return;
-    }
-    if (total < Number(config.pedido_minimo || 0)) {
-      toast.error("Pedido abaixo do mínimo da loja");
-      return;
-    }
-
+    if (!cart.length) { toast.error("Adicione itens ao carrinho"); return; }
+    if (!customer.nome.trim() || !customer.telefone.trim()) { toast.error("Informe nome e WhatsApp"); return; }
+    if (customer.tipo_atendimento === "entrega" && !customer.endereco.trim()) { toast.error("Informe o endereço de entrega"); return; }
+    if (total < Number(config.pedido_minimo || 0)) { toast.error("Pedido abaixo do mínimo da loja"); return; }
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("api-public-pedidos", {
         body: {
-          action: "create",
-          slug,
-          customer,
-          items: cart.map((item) => ({
-            produto_id: String(item.product.id).split("__")[0],
-            produto_nome: item.product.nome,
-            quantidade: item.quantity,
-            valor_unitario: item.product.preco_sugerido,
-            observacoes: item.observations,
+          action: "create", slug, customer,
+          items: cart.map((it) => ({
+            produto_id: String(it.product.id).split("__")[0],
+            produto_nome: it.product.nome,
+            quantidade: it.quantity,
+            valor_unitario: it.product.preco_sugerido,
+            observacoes: it.observations,
           })),
         },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Falha ao criar pedido");
-      toast.success(`Pedido enviado com sucesso! Código ${data.codigo_pedido}`);
-      // Salvar dados do cliente para próximos pedidos (sem email, simples)
+      toast.success(`Pedido enviado! Código ${data.codigo_pedido}`);
       try {
         localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
-          nome: customer.nome,
-          telefone: customer.telefone,
-          tipo_atendimento: customer.tipo_atendimento,
-          forma_pagamento: customer.forma_pagamento,
+          nome: customer.nome, telefone: customer.telefone,
+          tipo_atendimento: customer.tipo_atendimento, forma_pagamento: customer.forma_pagamento,
           endereco: customer.endereco,
         }));
       } catch {/* ignore */}
-      setCart([]);
-      setCartOpen(false);
-      // Mantém nome, telefone, endereço; limpa apenas observações
+      setCart([]); setCartOpen(false);
       setCustomer((prev) => ({ ...prev, observacoes: "" }));
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error?.message || "Erro ao enviar pedido");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao enviar pedido");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const shareStore = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: config.nome_loja || "Cardápio", url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copiado!");
-      }
-    } catch {
-      /* noop */
     }
   };
 
@@ -441,934 +609,579 @@ export default function CardapioPublico() {
         body: { action: "customer", slug, telefone: customer.telefone },
       });
       if (data?.success) {
-        const total = Number(data.total || 0);
-        setAccountData({
-          pedidos: Number(data.pedidos || 0),
-          total,
-          pontos: Math.floor(total / 10), // 1 ponto a cada R$10
-        });
+        const t = Number(data.total || 0);
+        setAccountData({ pedidos: Number(data.pedidos || 0), total: t, pontos: Math.floor(t / 10) });
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setAccountLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setAccountLoading(false); }
   };
 
   const logoutAccount = () => {
     try { localStorage.removeItem(CUSTOMER_STORAGE_KEY); } catch {/* ignore */}
-    setCustomer({
-      nome: "",
-      telefone: "",
-      tipo_atendimento: "entrega",
-      forma_pagamento: "pix",
-      observacoes: "",
-      endereco: "",
-    });
-    setAccountData(null);
-    setAccountOpen(false);
+    setCustomer({ nome: "", telefone: "", tipo_atendimento: "entrega", forma_pagamento: "pix", observacoes: "", endereco: "" });
+    setAccountData(null); setAccountOpen(false);
     toast.success("Cadastro removido deste dispositivo");
   };
 
+  const scrollToSection = (id: string) => {
+    setActivePill(id);
+    document.getElementById(`c-sec-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: primary }} />
+      <div className="cardapio-root" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <style>{CARDAPIO_CSS}</style>
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#FF6B1A" }} />
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-center p-6 bg-white">
+      <div className="cardapio-root" style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
+        <style>{CARDAPIO_CSS}</style>
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Cardápio não encontrado</h1>
-          <p className="text-neutral-500">Verifique o link da loja.</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Playfair Display',serif" }}>Cardápio não encontrado</h1>
+          <p style={{ color: "#B8A898", marginTop: 6 }}>Verifique o link da loja.</p>
         </div>
       </div>
     );
   }
 
-  const fallbackImg =
-    "data:image/svg+xml;utf8," +
-    encodeURIComponent(
-      `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect fill='#f3f4f6' width='120' height='120'/><g fill='#cbd5e1'><path d='M30 40h10v40H30zM50 40h10v40H50zM70 40h10v40H70zM30 85h60v6H30z'/></g></svg>`
-    );
+  const nomeLoja = config.nome_loja || "Rosh Pizzaria";
+  const telWa = (config.telefone_loja || "").replace(/\D/g, "");
+  const aberto = config.aberto !== false;
+  const minimo = Number(config.pedido_minimo || 0);
+  const taxa = Number(config.taxa_entrega || 0);
 
-  const ProductImage = ({ src, alt, className }: { src?: string | null; alt: string; className?: string }) => (
-    <img
-      src={src || fallbackImg}
-      alt={alt}
-      loading="lazy"
-      className={className}
-      onError={(e) => ((e.currentTarget as HTMLImageElement).src = fallbackImg)}
-    />
-  );
+  // filtered flavors for pizza picker
+  const availableFlavorsBase = products.filter((p) => isPizzaProduct(p) && p.id !== selectedProduct?.id);
+  const visibleFlavors = flavorSearch.trim()
+    ? availableFlavorsBase.filter((p) => p.nome.toLowerCase().includes(flavorSearch.toLowerCase()))
+    : availableFlavorsBase;
 
-  // small helper to open product dialog with consistent scroll to top
-  const openProductDialog = (p: Product) => {
-    setSelectedProduct(p);
-    // focus search input when opening
-    setTimeout(() => searchRef.current?.focus(), 80);
+  const selectedExtraIds = extraFlavors.filter(Boolean);
+  const maxExtras = (selectedPizzaSize?.maxFlavors || 1) - 1;
+  const toggleFlavor = (id: string) => {
+    setExtraFlavors((prev) => {
+      const cleaned = prev.filter(Boolean);
+      if (cleaned.includes(id)) return cleaned.filter((x) => x !== id);
+      if (cleaned.length >= maxExtras) {
+        toast.error(`Você pode escolher até ${maxExtras} sabor(es) adicional(is)`);
+        return cleaned;
+      }
+      return [...cleaned, id];
+    });
   };
 
+  const finalModalPrice = (() => {
+    if (!selectedProduct) return 0;
+    if (isPizzaProduct(selectedProduct) && selectedPizzaSize) {
+      const base = computePizzaPrice(selectedProduct, selectedExtraIds, selectedPizzaSize.multiplier);
+      const bordaPrice = selectedBorda && selectedPizzaSize.tamanhoId ? getBordaPriceForSize(selectedBorda.id, selectedPizzaSize.tamanhoId) : 0;
+      return Math.round((base + bordaPrice) * 100) / 100;
+    }
+    return Number(selectedProduct.preco_sugerido || 0);
+  })();
+
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-800 pb-32 public-wrap">
+    <div className="cardapio-root">
       <style>{CARDAPIO_CSS}</style>
-      {/* Header */}
-      <header className="public-header" style={{ backgroundColor: primary }}>
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-2 text-white">
-          <h1 className="font-bold text-lg sm:text-xl truncate flex-1 tracking-tight">
-            {config.nome_loja || "Cardápio Digital"}
-          </h1>
-          <a
-            href="https://www.instagram.com/roshpizzaria/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Instagram"
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition hover-scale"
-          >
-            <Instagram className="h-5 w-5" />
-          </a>
-          <a
-            href="https://maps.app.goo.gl/c1MTAgZpNjRQSVKCA"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Localização no Google Maps"
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition hover-scale"
-          >
-            <MapPin className="h-5 w-5" />
-          </a>
-          <button
-            aria-label="Buscar"
-            onClick={() => setSearchOpen((v) => !v)}
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition"
-          >
-            <Search className="h-5 w-5" />
-          </button>
-          <button
-            aria-label="Compartilhar"
-            onClick={shareStore}
-            className="h-9 w-9 rounded-full hover:bg-white/15 flex items-center justify-center transition"
-          >
-            <Share2 className="h-5 w-5" />
-          </button>
-          <button
-            aria-label="Minha conta"
-            onClick={openAccount}
-            className="h-9 px-3 rounded-full hover:bg-white/15 flex items-center gap-1.5 transition text-sm font-medium"
-          >
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">{isLogged ? customer.nome.split(" ")[0] : "Entrar"}</span>
-          </button>
+
+      {/* HEADER */}
+      <header className="c-header">
+        <div className="c-logo-wrap">
+          <span className="c-logo-flame">🔥</span>
+          <span className="c-logo-text">{nomeLoja}</span>
         </div>
-        {searchOpen && (
-          <div className="max-w-5xl mx-auto px-4 pb-3 animate-fade-in">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-              <Input
-                ref={searchRef}
-                autoFocus
-                placeholder="Buscar pizza, bebida..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-white border-0 h-11 rounded-full shadow-md"
-              />
-            </div>
-          </div>
-        )}
+        <div className="c-header-actions">
+          <a className="c-icon-btn" href="https://instagram.com/roshpizzaria" target="_blank" rel="noopener noreferrer" title="Instagram">📸</a>
+          <a className="c-icon-btn" href="https://maps.app.goo.gl/c1MTAgZpNjRQSVKCA" target="_blank" rel="noopener noreferrer" title="Localização">📍</a>
+          <button className="c-icon-btn" onClick={() => { setSearchOpen((v) => !v); setTimeout(() => searchRef.current?.focus(), 60); }} title="Buscar">🔍</button>
+          <button className="c-icon-btn" onClick={openAccount} title="Minha conta" aria-label="Minha conta">
+            <User size={16} />
+          </button>
+          {cartCount > 0 && (
+            <button className="c-cart-btn" onClick={() => setCartOpen(true)}>
+              🛒 <span className="c-cart-count">{cartCount}</span>
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Hero banner */}
-      <div className="public-hero relative h-44 sm:h-56 overflow-hidden">
-        <img
-          src={config.banner_url || "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1600&q=80"}
-          alt="Banner"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white max-w-5xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-extrabold drop-shadow-lg">
-            {config.nome_loja || "Rosh Pizzaria 🍕"}
-          </h2>
-          <p className="text-sm sm:text-base text-white/90 mt-1 drop-shadow">
-            {config.descricao_loja || "Massa artesanal, ingredientes frescos e entrega rapidinha"}
+      {/* HERO */}
+      <section className="c-hero">
+        <div className="c-hero-bg" />
+        <div className="c-hero-blur" />
+        <div className="c-hero-glow" />
+        <div className="c-hero-emoji">🍕</div>
+        <div className="c-hero-content">
+          <div className="c-hero-badge">
+            <i /> {aberto ? "Aberto agora" : "Fechado"}{config.horario_funcionamento ? " · Até 23h" : ""}
+          </div>
+          <h1 className="c-hero-title">
+            Pizza que faz<br /><em>você sonhar</em>
+          </h1>
+          <p className="c-hero-sub">
+            {config.descricao_loja || "Massa artesanal fermentada 24h, ingredientes frescos e entrega ultrarrápida. Peça agora."}
           </p>
+          <div className="c-hero-stats">
+            <div><div className="c-stat-val">4.9★</div><div className="c-stat-lbl">Avaliação</div></div>
+            <div><div className="c-stat-val">30min</div><div className="c-stat-lbl">Entrega</div></div>
+            <div><div className="c-stat-val">+2k</div><div className="c-stat-lbl">Pedidos/mês</div></div>
+          </div>
+        </div>
+      </section>
+
+      {/* STATUS BAR */}
+      <div className="c-status-bar">
+        <div className="c-status-open">
+          <span className="c-dot-green" />
+          {aberto ? "Aberto agora" : "Fechado"}{aberto ? " — Fecha às 23:00" : ""}
+        </div>
+        <div className="c-status-chips">
+          {taxa > 0 && <span className="c-chip hot">🛵 Entrega {formatBRL(taxa)}</span>}
+          {minimo > 0 && <span className="c-chip">Mín {formatBRL(minimo)}</span>}
+          <span className="c-chip">Pix · Cartão · Dinheiro</span>
         </div>
       </div>
 
-      {/* Subheader info */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div className="bg-white rounded-xl shadow-sm border border-neutral-100 p-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap text-sm">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              {config.aberto === false ? "Fechado" : "Aberto agora"}
-            </span>
-            <span className="text-neutral-400">•</span>
-            <span className="text-neutral-600">
-              {Number(config.pedido_minimo || 0) > 0
-                ? `Mín ${formatBRL(Number(config.pedido_minimo))}`
-                : "Sem pedido mínimo"}
-            </span>
-            {Number(config.taxa_entrega || 0) > 0 && (
-              <>
-                <span className="text-neutral-400">•</span>
-                <span className="text-neutral-600">Entrega {formatBRL(Number(config.taxa_entrega))}</span>
-              </>
-            )}
+      {/* SEARCH */}
+      {searchOpen && (
+        <div className="c-search-wrap c-fade-up">
+          <div className="c-search-inner">
+            <span className="c-search-icon">🔍</span>
+            <input
+              ref={searchRef}
+              className="c-search-input"
+              placeholder="Buscar pizza, bebida, combo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <button
-            className="text-sm font-semibold hover:underline"
-            style={{ color: primary }}
-            onClick={() =>
-              toast.message(config.nome_loja || "Loja", {
-                description: `${config.descricao_loja || ""}${
-                  config.endereco_loja ? `\n${config.endereco_loja}` : ""
-                }${config.telefone_loja ? `\nTel: ${config.telefone_loja}` : ""}`,
-              })
-            }
-          >
-            Sobre a loja →
-          </button>
         </div>
-
-        {config.aberto === false && (
-          <div className="mt-3 border border-red-200 bg-red-50 text-red-600 text-sm rounded-md py-2 text-center">
-            Loja fechada{config.horario_abertura ? `, abre hoje às ${config.horario_abertura}` : ""}
-          </div>
-        )}
-
-        {config.mensagem_loja && (
-          <div className="mt-3 text-sm text-neutral-600 border-l-4 pl-3 bg-amber-50/50 py-2 rounded-r" style={{ borderColor: primary }}>
-            {config.mensagem_loja}
-          </div>
-        )}
-      </div>
-
-      {/* Category nav */}
-      {categories.length > 0 && (
-        <nav className="sticky top-16 z-30 bg-white/95 backdrop-blur border-b border-neutral-200 mt-4 shadow-sm">
-          <div className="max-w-5xl mx-auto px-4">
-            <div className="flex gap-2 overflow-x-auto py-3 scrollbar-thin">
-              {topShown.length > 0 && (
-                <button
-                  onClick={() => document.getElementById('section-destaques')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap hover-scale"
-                >
-                  ⭐ Mais pedidos
-                </button>
-              )}
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => document.getElementById(`section-${cat.replace(/\s+/g, '-')}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold border border-neutral-200 hover:border-neutral-400 transition whitespace-nowrap hover-scale"
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
       )}
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-10">
-        {/* Os mais pedidos */}
+      {/* NAV PILLS */}
+      <div className="c-nav-pills">
         {topShown.length > 0 && (
-          <section id="section-destaques" className="scroll-mt-32 animate-fade-in">
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-extrabold text-neutral-900 tracking-tight">🔥 Os mais pedidos</h2>
-              <span className="text-xs text-neutral-500">campeões de venda</span>
+          <button
+            className={`c-pill ${activePill === "destaques" ? "active" : ""}`}
+            onClick={() => scrollToSection("destaques")}
+          >
+            ⭐ Mais pedidos
+          </button>
+        )}
+        {categories.map((cat) => {
+          const count = filteredProducts.filter((p) => (p.categoria || "Outros") === cat).length;
+          const id = cat.replace(/\s+/g, "-");
+          return (
+            <button
+              key={cat}
+              className={`c-pill ${activePill === id ? "active" : ""}`}
+              onClick={() => scrollToSection(id)}
+            >
+              {categoryEmoji(cat)} {cat} <span className="c-pill-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* MAIN */}
+      <main className="c-main">
+        {topShown.length > 0 && (
+          <section id="c-sec-destaques" className="c-category-section c-fade-up">
+            <div className="c-section-header">
+              <h2 className="c-section-title">🔥 Os mais pedidos</h2>
+              <span className="c-section-sub">Campeões de venda</span>
             </div>
-            <div className="destaques-scroll -mx-4 px-4">
+            <div className="c-destaques-scroll">
               {topShown.map((p) => (
-                <div key={p.id} className="card-item" onClick={() => openProductDialog(p)}>
-                  <div style={{ height: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7', borderRadius: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 44 }}>{p.nome?.slice(0,1) || '🍕'}</span>
+                <div key={p.id} className="c-destaque-card" onClick={() => setSelectedProduct(p)}>
+                  <span className="c-destaque-badge">★ Popular</span>
+                  {p.imagem_url
+                    ? <img src={p.imagem_url} alt={p.nome} className="c-destaque-img" loading="lazy" />
+                    : <div className="c-destaque-img-ph">🍕</div>}
+                  <div className="c-destaque-body">
+                    <div className="c-destaque-name">{p.nome}</div>
+                    <div className="c-destaque-price">{formatBRL(p.preco_sugerido)}</div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{p.nome}</div>
-                  <div style={{ fontSize: 12, color: '#777' }}>A partir de</div>
-                  <div style={{ fontWeight: 800, color: primary }}>{formatBRL(p.preco_sugerido)}</div>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* Categorias */}
-        {categories.map((category) => {
-          const items = filteredProducts.filter((p) => (p.categoria || "Outros") === category);
+        {categories.map((cat) => {
+          const items = filteredProducts.filter((p) => (p.categoria || "Outros") === cat);
           if (!items.length) return null;
-          const isExpanded = !!expandedCategories[category] || !!search.trim();
-          const visibleItems = isExpanded ? items : items.slice(0, PREVIEW_LIMIT);
-          const hiddenCount = items.length - visibleItems.length;
+          const id = cat.replace(/\s+/g, "-");
           return (
-            <section key={category} id={`section-${category.replace(/\s+/g, '-')}`} className="scroll-mt-32 animate-fade-in">
-              <button
-                type="button"
-                onClick={() => setExpandedCategories((prev) => ({ ...prev, [category]: !prev[category] }))}
-                className="w-full flex items-center justify-between mb-4 group"
-              >
-                <h2 className="text-xl font-extrabold text-neutral-900 tracking-tight flex items-center gap-2">
-                  {category}
-                  <span className="text-xs font-medium text-neutral-400">({items.length})</span>
-                </h2>
-                <span
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full border border-neutral-200 group-hover:border-neutral-400 transition"
-                  style={{ color: primary }}
-                >
-                  {isExpanded ? (
-                    <>
-                      Recolher <ChevronUp className="h-3.5 w-3.5" />
-                    </>
-                  ) : (
-                    <>
-                      Ver tudo <ChevronDown className="h-3.5 w-3.5" />
-                    </>
-                  )}
-                </span>
-              </button>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {visibleItems.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => setSelectedProduct(product)}
-                    className="text-left flex items-stretch gap-3 bg-white border border-neutral-100 rounded-2xl p-3 hover:shadow-lg hover:border-neutral-200 transition-all group relative overflow-hidden"
-                  >
-                    <div className="flex-1 min-w-0 flex flex-col">
-                      <div className="flex items-start gap-2">
-                        <div className="font-bold text-neutral-900 leading-tight flex-1">{product.nome}</div>
-                        {product.destaque_cardapio && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 flex-shrink-0">
-                            ⭐
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-500 line-clamp-2 mt-1 flex-1">
-                        {product.descricao || product.descricao_curta || product.descricao_completa || ""}
-                      </p>
-                      <div className="mt-2 flex items-end justify-between gap-2">
+            <section key={cat} id={`c-sec-${id}`} className="c-category-section c-fade-up">
+              <div className="c-cat-label">
+                {categoryEmoji(cat)} {cat} <small>({items.length} {items.length === 1 ? "item" : "itens"})</small>
+              </div>
+              <div className="c-prod-list">
+                {items.map((p) => (
+                  <button key={p.id} className="c-prod-item" onClick={() => setSelectedProduct(p)}>
+                    <div className="c-prod-info">
+                      <div className="c-prod-name">{p.nome}</div>
+                      <div className="c-prod-desc">{p.descricao || p.descricao_curta || p.descricao_completa || "—"}</div>
+                      <div className="c-prod-footer">
                         <div>
-                          <div className="text-[10px] text-neutral-400 uppercase tracking-wide">A partir de</div>
-                          <div className="text-base font-extrabold" style={{ color: primary }}>{formatBRL(product.preco_sugerido)}</div>
+                          <div className="c-prod-price-from">A partir de</div>
+                          <div className="c-prod-price">{formatBRL(p.preco_sugerido)}</div>
                         </div>
-                        {isPizzaProduct(product) && (
-                          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-orange-50 text-orange-600">
-                            ½ + ½
-                          </span>
-                        )}
+                        {isPizzaProduct(p) && <span className="c-half-badge">½ + ½</span>}
                       </div>
                     </div>
-                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
-                      <ProductImage
-                        src={product.imagem_url}
-                        alt={product.nome}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute bottom-1 right-1 h-7 w-7 rounded-full bg-white shadow-md flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 transition" style={{ color: primary }}>
-                        <Plus className="h-4 w-4" strokeWidth={3} />
-                      </div>
+                    <div className="c-prod-img-wrap">
+                      {p.imagem_url
+                        ? <img src={p.imagem_url} alt={p.nome} className="c-prod-img" loading="lazy" />
+                        : <div className="c-prod-img-ph">{categoryEmoji(cat)}</div>}
+                      <div className="c-add-circle">+</div>
                     </div>
                   </button>
                 ))}
               </div>
-              {hiddenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setExpandedCategories((prev) => ({ ...prev, [category]: true }))}
-                  className="mt-4 w-full py-3 rounded-xl border-2 border-dashed text-sm font-semibold hover:bg-neutral-50 transition flex items-center justify-center gap-2"
-                  style={{ borderColor: primary, color: primary }}
-                >
-                  Ver mais {hiddenCount} {hiddenCount === 1 ? "item" : "itens"}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              )}
-              {isExpanded && items.length > PREVIEW_LIMIT && !search.trim() && (
-                <button
-                  type="button"
-                  onClick={() => setExpandedCategories((prev) => ({ ...prev, [category]: false }))}
-                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-neutral-500 hover:text-neutral-700 transition flex items-center justify-center gap-2"
-                >
-                  Recolher categoria <ChevronUp className="h-4 w-4" />
-                </button>
-              )}
             </section>
           );
         })}
 
         {filteredProducts.length === 0 && (
-          <div className="text-center text-sm text-neutral-500 py-12">Nenhum item encontrado.</div>
+          <div style={{ textAlign: "center", color: "var(--text3)", padding: "40px 20px" }}>
+            Nenhum item encontrado.
+          </div>
         )}
       </main>
 
-      {/* Sticky cart bar */}
+      {/* STICKY CART BAR */}
       {cartCount > 0 && (
-        <div className="fixed bottom-16 inset-x-0 z-40 px-4 pb-2 animate-fade-in">
-          <button
-            onClick={() => setCartOpen(true)}
-            className="max-w-5xl mx-auto w-full h-14 rounded-2xl shadow-2xl text-white flex items-center justify-between px-5 font-semibold hover:opacity-95 transition"
-            style={{ backgroundColor: primary }}
-          >
-            <span className="flex items-center gap-2">
-              <span className="bg-white/20 rounded-full h-7 w-7 flex items-center justify-center text-sm font-bold">
-                {cartCount}
-              </span>
-              Ver carrinho
-            </span>
-            <span className="text-base">{formatBRL(subtotal)}</span>
+        <div className="c-sticky-cart">
+          <button className="c-sticky-cart-btn" onClick={() => setCartOpen(true)}>
+            <div className="c-cart-left">
+              <div className="c-cart-pill">{cartCount}</div>
+              <span>Ver meu pedido</span>
+            </div>
+            <span>{formatBRL(subtotal)}</span>
           </button>
         </div>
       )}
-      {/* WhatsApp floating button */}
-      <a
-        href="https://api.whatsapp.com/send/?phone=558798247745&text&type=phone_number&app_absent=0&utm_source=ig"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Falar no WhatsApp"
-        className="fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-[#25D366] hover:bg-[#1ebe5b] shadow-lg flex items-center justify-center text-white transition-transform hover:scale-105"
-      >
-        <MessageCircle className="h-7 w-7" fill="currentColor" />
-      </a>
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-neutral-200">
-        <div className="max-w-5xl mx-auto grid grid-cols-3 h-16">
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="flex flex-col items-center justify-center gap-0.5"
-            style={{ color: primary }}
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs font-medium">Início</span>
-            <span className="block h-0.5 w-8 rounded-full -mb-1" style={{ backgroundColor: primary }} />
-          </button>
-          <button
-            onClick={() =>
-              toast.info("Acompanhamento de pedidos em breve", {
-                description: "Você receberá atualizações no WhatsApp.",
-              })
-            }
-            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500"
-          >
-            <ClipboardList className="h-5 w-5" />
-            <span className="text-xs">Pedidos</span>
-          </button>
-          <button
-            onClick={() => setCartOpen(true)}
-            className="flex flex-col items-center justify-center gap-0.5 text-neutral-500 relative"
-          >
-            <div className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
-                  style={{ backgroundColor: primary }}
-                >
-                  {cartCount}
-                </span>
-              )}
+      {/* WHATSAPP */}
+      {telWa && (
+        <a className="c-wa-btn" href={`https://api.whatsapp.com/send/?phone=${telWa}`} target="_blank" rel="noopener noreferrer" title="WhatsApp">
+          💬
+        </a>
+      )}
+
+      {/* PRODUCT MODAL */}
+      {selectedProduct && (
+        <div className="c-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setSelectedProduct(null); }}>
+          <div className="c-modal">
+            <div style={{ position: "relative" }}>
+              {selectedProduct.imagem_url
+                ? <img src={selectedProduct.imagem_url} alt={selectedProduct.nome} className="c-modal-img" />
+                : <div className="c-modal-img-ph">{categoryEmoji(selectedProduct.categoria || "")}</div>}
+              <button className="c-modal-close" onClick={() => setSelectedProduct(null)}>✕</button>
             </div>
-            <span className="text-xs">Carrinho</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Cart Sheet */}
-      <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Seu pedido</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            {cart.length === 0 && (
-              <div className="text-sm text-neutral-500 py-8 text-center">
-                <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-neutral-300" />
-                Seu carrinho está vazio.
+            <div className="c-modal-body">
+              <div className="c-modal-name">{selectedProduct.nome}</div>
+              <div className="c-modal-desc">
+                {selectedProduct.descricao || selectedProduct.descricao_completa || selectedProduct.descricao_curta || "Sem descrição."}
               </div>
-            )}
-            {cart.map((item, index) => (
-              <div key={`${item.product.id}-${index}`} className="flex gap-3 border-b pb-4">
-                <div className="flex-1">
-                  <div className="font-medium text-neutral-900">{item.product.nome}</div>
-                  {item.observations && (
-                    <div className="text-xs text-neutral-500 mt-0.5">{item.observations}</div>
-                  )}
-                  <div className="text-sm mt-1 font-semibold">{formatBRL(item.product.preco_sugerido)}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => updateQuantity(index, -1)}>
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-6 text-center font-medium">{item.quantity}</span>
-                  <Button variant="outline" size="icon" onClick={() => updateQuantity(index, 1)}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              <div className="c-modal-price">{formatBRL(finalModalPrice)}</div>
 
-            {cart.length > 0 && (
-              <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Nome</Label>
-                    <Input value={customer.nome} onChange={(e) => setCustomer({ ...customer, nome: e.target.value })} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Telefone</Label>
-                    <Input
-                      value={customer.telefone}
-                      onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Atendimento</Label>
-                    <Select
-                      value={customer.tipo_atendimento}
-                      onValueChange={(v) => setCustomer({ ...customer, tipo_atendimento: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {!!config.aceita_entrega && <SelectItem value="entrega">Entrega</SelectItem>}
-                        {!!config.aceita_retirada && <SelectItem value="retirada">Retirada</SelectItem>}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Pagamento</Label>
-                    <Select
-                      value={customer.forma_pagamento}
-                      onValueChange={(v) => setCustomer({ ...customer, forma_pagamento: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pix">Pix</SelectItem>
-                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                        <SelectItem value="cartao">Cartão</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {customer.tipo_atendimento === "entrega" && (
-                  <div className="space-y-1.5">
-                    <Label>Endereço</Label>
-                    <Textarea
-                      rows={3}
-                      value={customer.endereco}
-                      onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
-                    />
-                  </div>
-                )}
-                <div className="space-y-1.5">
-                  <Label>Observações do pedido</Label>
-                  <Textarea
-                    rows={2}
-                    value={customer.observacoes}
-                    onChange={(e) => setCustomer({ ...customer, observacoes: e.target.value })}
-                  />
-                </div>
-
-                <div className="text-sm space-y-1 border-t pt-3">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatBRL(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Taxa de entrega</span>
-                    <span>{formatBRL(deliveryFee)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-base pt-1">
-                    <span>Total</span>
-                    <span>{formatBRL(total)}</span>
-                  </div>
-                </div>
-                <Button
-                  className="w-full h-12 text-base font-semibold text-white"
-                  style={{ backgroundColor: primary }}
-                  onClick={submitOrder}
-                  disabled={submitting}
-                >
-                  {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Enviar pedido
-                </Button>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Product Dialog */}
-      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
-        <DialogContent className="p-0 overflow-hidden max-w-md w-[calc(100%-1rem)] sm:w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col gap-0 rounded-2xl">
-          <div className="relative h-32 sm:h-56 bg-neutral-100 flex-shrink-0">
-            <ProductImage
-              src={selectedProduct?.imagem_url}
-              alt={selectedProduct?.nome || ""}
-              className="w-full h-full object-cover"
-            />
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow flex items-center justify-center"
-              aria-label="Fechar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="p-4 sm:p-5 space-y-3 sm:space-y-4 overflow-y-auto flex-1 min-h-0">
-            <DialogHeader className="text-left p-0 space-y-1">
-              <DialogTitle className="text-base sm:text-xl">{selectedProduct?.nome}</DialogTitle>
-              <p className="text-xs sm:text-sm text-neutral-500 line-clamp-3">
-                {selectedProduct?.descricao || selectedProduct?.descricao_completa || selectedProduct?.descricao_curta || "Sem descrição."}
-              </p>
-            </DialogHeader>
-
-            {(() => {
-              if (!selectedProduct) return null;
-              const isPizza = isPizzaProduct(selectedProduct);
-              const validExtras = isPizza && selectedPizzaSize
-                ? extraFlavors.filter(Boolean).slice(0, selectedPizzaSize.maxFlavors - 1)
-                : [];
-              const finalPrice = isPizza && selectedPizzaSize
-                ? computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier)
-                : Number(selectedProduct.preco_sugerido || 0);
-              return (
-                <div className="text-lg font-bold" style={{ color: primary }}>
-                  {formatBRL(finalPrice)}
-                </div>
-              );
-            })()}
-
-            {isPizzaProduct(selectedProduct) && (
-              <>
-                <div className="space-y-1.5 rounded-lg border border-dashed p-3" style={{ borderColor: primary }}>
-                  <Label className="font-semibold" style={{ color: primary }}>
-                    📏 Escolha primeiro o tamanho da pizza
-                  </Label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                    {SIZE_OPTIONS.map((size) => {
-                      const price = computePizzaPrice(selectedProduct, [], size.multiplier);
-                      const active = selectedSize === size.id;
+              {isPizzaProduct(selectedProduct) && (
+                <>
+                  <div className="c-sub2">📏 Escolha o tamanho</div>
+                  <div className="c-sizes-grid">
+                    {SIZE_OPTIONS.map((s) => {
+                      const price = computePizzaPrice(selectedProduct, [], s.multiplier);
+                      const active = selectedSize === s.id;
                       return (
                         <button
-                          key={size.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedSize(size.id);
-                            setExtraFlavors((prev) => prev.slice(0, size.maxFlavors - 1));
-                          }}
-                          className={`rounded-lg border-2 px-1 py-2 text-center transition ${
-                            active ? "shadow-md" : "border-neutral-200 hover:border-neutral-300"
-                          }`}
-                          style={active ? { borderColor: primary, backgroundColor: `${primary}15` } : {}}
-                          title={size.descricao || ""}
+                          key={s.id}
+                          className={`c-size-btn ${active ? "active" : ""}`}
+                          onClick={() => { setSelectedSize(s.id); setExtraFlavors((prev) => prev.slice(0, s.maxFlavors - 1)); }}
+                          title={s.descricao || ""}
                         >
-                          <div className="text-[11px] font-bold leading-tight">{size.label}</div>
-                          <div className="text-[10px] text-neutral-500 leading-tight">
-                            {size.maxFlavors} sab · {size.slices} fat
-                          </div>
-                          <div className="text-[11px] font-semibold mt-0.5" style={{ color: primary }}>
-                            {formatBRL(price)}
-                          </div>
+                          <div className="c-size-name">{s.label}</div>
+                          <div className="c-size-info">{s.maxFlavors} sab · {s.slices} fat</div>
+                          <div className="c-size-price">{formatBRL(price)}</div>
                         </button>
                       );
                     })}
                   </div>
+
+                  {selectedPizzaSize && selectedPizzaSize.maxFlavors > 1 && (
+                    <>
+                      <div className="c-sub2">
+                        🍕 Sabores adicionais
+                        <span className="c-hint">(até {maxExtras} · {selectedExtraIds.length} selecionado{selectedExtraIds.length !== 1 ? "s" : ""})</span>
+                      </div>
+                      <input
+                        className="c-flavor-search"
+                        placeholder="Pesquisar sabor..."
+                        value={flavorSearch}
+                        onChange={(e) => setFlavorSearch(e.target.value)}
+                      />
+                      <div className="c-flavor-list">
+                        {visibleFlavors.map((f) => {
+                          const sel = selectedExtraIds.includes(f.id);
+                          return (
+                            <button key={f.id} className={`c-flavor-item ${sel ? "selected" : ""}`} onClick={() => toggleFlavor(f.id)}>
+                              <div className="c-flavor-check">{sel ? "✓" : ""}</div>
+                              <div className="c-flavor-text">
+                                <div className="c-flavor-name">{f.nome}</div>
+                                <div className="c-flavor-desc">{f.descricao || f.descricao_curta || ""}</div>
+                              </div>
+                              <div className="c-flavor-price-tag">{formatBRL(f.preco_sugerido)}</div>
+                            </button>
+                          );
+                        })}
+                        {visibleFlavors.length === 0 && (
+                          <div style={{ textAlign: "center", color: "var(--text3)", fontSize: 12, padding: 12 }}>Nenhum sabor encontrado.</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {selectedPizzaSize && pizzaBordas.length > 0 && (
+                    <>
+                      <div className="c-sub2">🥯 Borda recheada <span className="c-hint">(opcional)</span></div>
+                      <div className="c-bordas-grid">
+                        <button
+                          className={`c-borda-btn ${!selectedBordaId ? "active" : ""}`}
+                          onClick={() => setSelectedBordaId("")}
+                        >
+                          <div className="c-borda-name">Sem borda</div>
+                          <div className="c-borda-price">Grátis</div>
+                        </button>
+                        {pizzaBordas.map((b) => {
+                          const price = selectedPizzaSize.tamanhoId ? getBordaPriceForSize(b.id, selectedPizzaSize.tamanhoId) : 0;
+                          return (
+                            <button
+                              key={b.id}
+                              className={`c-borda-btn ${selectedBordaId === b.id ? "active" : ""}`}
+                              onClick={() => setSelectedBordaId(b.id)}
+                            >
+                              <div className="c-borda-name">{b.nome}</div>
+                              <div className="c-borda-price">+ {formatBRL(price)}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              <div style={{ marginBottom: 14 }}>
+                <div className="c-sub2">📝 Observações <span className="c-hint">(opcional)</span></div>
+                <textarea
+                  className="c-obs-input"
+                  rows={2}
+                  placeholder="Ex: sem cebola, bem assada, molho extra..."
+                  value={selectedObs}
+                  onChange={(e) => setSelectedObs(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="c-modal-footer">
+              <div className="c-qty-ctrl">
+                <button className="c-qty-btn" onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}>−</button>
+                <span className="c-qty-val">{selectedQty}</span>
+                <button className="c-qty-btn" onClick={() => setSelectedQty((q) => q + 1)}>+</button>
+              </div>
+              <button
+                className="c-add-btn"
+                onClick={addToCart}
+                disabled={isPizzaProduct(selectedProduct) && !selectedPizzaSize}
+              >
+                🛒 Adicionar {formatBRL(finalModalPrice * selectedQty)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CART DRAWER */}
+      {cartOpen && (
+        <div className="c-cart-overlay" onClick={(e) => { if (e.target === e.currentTarget) setCartOpen(false); }}>
+          <div className="c-cart-drawer">
+            <div className="c-cart-head">
+              <div className="c-cart-title">🛒 Meu pedido</div>
+              <button className="c-icon-btn" onClick={() => setCartOpen(false)}>✕</button>
+            </div>
+            <div className="c-cart-body">
+              {cart.length === 0 ? (
+                <div className="c-empty-cart">
+                  <div className="c-empty-icon">🛒</div>
+                  <div className="c-empty-text">Seu carrinho está vazio</div>
                 </div>
-
-                {!selectedPizzaSize && (
-                  <p className="text-xs text-neutral-500">
-                    Depois de escolher o tamanho, você poderá selecionar os sabores da pizza.
-                  </p>
-                )}
-
-                {selectedPizzaSize && selectedPizzaSize.maxFlavors > 1 && (
-                  <div className="space-y-2 rounded-lg border border-dashed p-3" style={{ borderColor: primary }}>
-                    <Label className="font-semibold" style={{ color: primary }}>
-                      🍕 Sabores adicionais (até {selectedPizzaSize.maxFlavors - 1})
-                    </Label>
-                    <p className="text-xs text-neutral-500">
-                      O preço final é a média dos sabores escolhidos.
-                    </p>
-                    {Array.from({ length: selectedPizzaSize.maxFlavors - 1 }).map((_, idx) => {
-                      const selectedFlavorId = extraFlavors[idx] || "";
-                      const selectedFlavor = products.find((p) => p.id === selectedFlavorId);
-                      const availableFlavors = products.filter(
-                        (p) =>
-                          isPizzaProduct(p) &&
-                          p.id !== selectedProduct.id &&
-                          !extraFlavors.filter((_, i) => i !== idx).includes(p.id)
-                      );
-
-                      return (
-                        <div key={idx} className="space-y-1.5">
-                          <Popover open={openFlavorPicker === idx} onOpenChange={(open) => setOpenFlavorPicker(open ? idx : null)}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={openFlavorPicker === idx}
-                                className="w-full justify-between font-normal"
-                              >
-                                <span className="truncate text-left">
-                                  {selectedFlavor ? selectedFlavor.nome : `Pesquisar sabor ${idx + 2}`}
-                                </span>
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder={`Pesquisar sabor ${idx + 2}...`} />
-                                <CommandList>
-                                  <CommandEmpty>Nenhum sabor encontrado.</CommandEmpty>
-                                  <CommandGroup>
-                                    <CommandItem
-                                      value={`none-${idx}`}
-                                      onSelect={() => {
-                                        setExtraFlavors((prev) => {
-                                          const next = [...prev];
-                                          next[idx] = "";
-                                          return next;
-                                        });
-                                        setOpenFlavorPicker(null);
-                                      }}
-                                    >
-                                      <Check className={`mr-2 h-4 w-4 ${!selectedFlavorId ? 'opacity-100' : 'opacity-0'}`} />
-                                      <div className="min-w-0">
-                                        <div className="font-medium">— Sem este sabor —</div>
-                                      </div>
-                                    </CommandItem>
-                                    {availableFlavors.map((p) => (
-                                      <CommandItem
-                                        key={p.id}
-                                        value={`${p.nome} ${(p.descricao || p.descricao_curta || p.descricao_completa || "")}`}
-                                        onSelect={() => {
-                                          setExtraFlavors((prev) => {
-                                            const next = [...prev];
-                                            next[idx] = p.id;
-                                            return next;
-                                          });
-                                          setOpenFlavorPicker(null);
-                                        }}
-                                      >
-                                        <Check className={`mr-2 h-4 w-4 ${selectedFlavorId === p.id ? 'opacity-100' : 'opacity-0'}`} />
-                                        <div className="min-w-0">
-                                          <div className="font-medium leading-tight">{p.nome}</div>
-                                          <div className="text-xs text-muted-foreground line-clamp-2">
-                                            {p.descricao || p.descricao_curta || p.descricao_completa || "Sem descrição."}
-                                          </div>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          {selectedFlavor && (
-                            <p className="text-xs text-neutral-500">
-                              {selectedFlavor.descricao || selectedFlavor.descricao_curta || selectedFlavor.descricao_completa || "Sem descrição."}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+              ) : (
+                cart.map((it, idx) => (
+                  <div key={`${it.product.id}-${idx}`} className="c-cart-item">
+                    <div className="c-cart-item-info">
+                      <div className="c-cart-item-name">{it.product.nome}</div>
+                      {it.observations && <div className="c-cart-item-obs">{it.observations}</div>}
+                      <div className="c-cart-item-price">{formatBRL(it.product.preco_sugerido * it.quantity)}</div>
+                      <div className="c-cq-wrap">
+                        <button className="c-cq-btn" onClick={() => updateQuantity(idx, -1)}>−</button>
+                        <span className="c-cq-val">{it.quantity}</span>
+                        <button className="c-cq-btn" onClick={() => updateQuantity(idx, 1)}>+</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {cart.length > 0 && (
+              <div className="c-cart-form">
+                <div className="c-form-row">
+                  <div className="c-form-field">
+                    <label className="c-form-label">Nome</label>
+                    <input className="c-form-input" placeholder="Seu nome" value={customer.nome}
+                      onChange={(e) => setCustomer({ ...customer, nome: e.target.value })} />
+                  </div>
+                  <div className="c-form-field">
+                    <label className="c-form-label">WhatsApp</label>
+                    <input className="c-form-input" placeholder="(00) 00000-0000" inputMode="tel" value={customer.telefone}
+                      onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })} />
+                  </div>
+                </div>
+                <div className="c-form-row">
+                  <div className="c-form-field">
+                    <label className="c-form-label">Atendimento</label>
+                    <select className="c-form-select" value={customer.tipo_atendimento}
+                      onChange={(e) => setCustomer({ ...customer, tipo_atendimento: e.target.value })}>
+                      {config.aceita_entrega !== false && <option value="entrega">🛵 Entrega</option>}
+                      {config.aceita_retirada !== false && <option value="retirada">🏃 Retirada</option>}
+                    </select>
+                  </div>
+                  <div className="c-form-field">
+                    <label className="c-form-label">Pagamento</label>
+                    <select className="c-form-select" value={customer.forma_pagamento}
+                      onChange={(e) => setCustomer({ ...customer, forma_pagamento: e.target.value })}>
+                      <option value="pix">Pix</option>
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="credito">Crédito</option>
+                      <option value="debito">Débito</option>
+                    </select>
+                  </div>
+                </div>
+                {customer.tipo_atendimento === "entrega" && (
+                  <div className="c-form-field" style={{ marginBottom: 11 }}>
+                    <label className="c-form-label">Endereço de entrega</label>
+                    <textarea className="c-form-textarea" rows={2} placeholder="Rua, nº, bairro, ponto de referência"
+                      value={customer.endereco}
+                      onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })} />
                   </div>
                 )}
-              </>
+                <div className="c-form-field" style={{ marginBottom: 13 }}>
+                  <label className="c-form-label">Observações do pedido</label>
+                  <textarea className="c-form-textarea" rows={2} placeholder="Alguma instrução especial?"
+                    value={customer.observacoes}
+                    onChange={(e) => setCustomer({ ...customer, observacoes: e.target.value })} />
+                </div>
+                <div className="c-total-box">
+                  <div className="c-total-row"><span>Subtotal</span><span>{formatBRL(subtotal)}</span></div>
+                  <div className="c-total-row"><span>Taxa de entrega</span><span>{formatBRL(deliveryFee)}</span></div>
+                  <div className="c-total-final"><span>Total</span><span className="c-total-val">{formatBRL(total)}</span></div>
+                </div>
+                <button className="c-submit-btn" onClick={submitOrder} disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "🚀"} Confirmar pedido
+                </button>
+              </div>
             )}
-
-            <div className="space-y-1.5">
-              <Label>Observações</Label>
-              <Textarea
-                rows={2}
-                value={selectedObs}
-                onChange={(e) => setSelectedObs(e.target.value)}
-                placeholder="Ex: sem cebola, bem assada..."
-              />
-            </div>
           </div>
-          <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-t bg-white flex-shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}>
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="w-7 text-center font-medium">{selectedQty}</span>
-              <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setSelectedQty((q) => q + 1)}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {(() => {
-              if (!selectedProduct) return null;
-              const isPizza = isPizzaProduct(selectedProduct);
-              const validExtras = isPizza && selectedPizzaSize
-                ? extraFlavors.filter(Boolean).slice(0, selectedPizzaSize.maxFlavors - 1)
-                : [];
-              const finalPrice = isPizza && selectedPizzaSize
-                ? computePizzaPrice(selectedProduct, validExtras, selectedPizzaSize.multiplier)
-                : Number(selectedProduct.preco_sugerido || 0);
-              return (
-                <Button
-                  className="text-white font-semibold flex-1 h-11"
-                  style={{ backgroundColor: primary }}
-                  onClick={addToCart}
-                  disabled={isPizza && !selectedPizzaSize}
-                >
-                  Adicionar {formatBRL(finalPrice * selectedQty)}
-                </Button>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      {/* Minha Conta Dialog */}
+      {/* Minha Conta */}
       <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
-        <DialogContent className="max-w-md w-[calc(100%-1rem)] rounded-2xl">
+        <DialogContent className="max-w-md w-[calc(100%-1rem)] rounded-2xl bg-[#1A1410] border-[rgba(255,180,100,0.22)] text-[#F5EAD8]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" style={{ color: primary }} />
+            <DialogTitle className="flex items-center gap-2" style={{ fontFamily: "'Playfair Display',serif" }}>
+              <User className="h-5 w-5" style={{ color: "#FF6B1A" }} />
               {isLogged ? "Minha conta" : "Meu cadastro"}
             </DialogTitle>
           </DialogHeader>
-
           {!isLogged ? (
             <div className="space-y-3 pt-2">
-              <p className="text-sm text-neutral-600">
-                Faça um cadastro rápido para acumular pontos e não digitar seus dados a cada pedido.
+              <p className="text-sm" style={{ color: "#B8A898" }}>
+                Cadastro rápido — acumule pontos e não precise digitar seus dados a cada pedido.
               </p>
-              <div className="space-y-1.5">
-                <Label>Nome</Label>
-                <Input
-                  value={customer.nome}
-                  onChange={(e) => setCustomer({ ...customer, nome: e.target.value })}
-                  placeholder="Seu nome"
-                />
+              <div>
+                <label className="c-form-label">Nome</label>
+                <input className="c-form-input" placeholder="Seu nome"
+                  value={customer.nome} onChange={(e) => setCustomer({ ...customer, nome: e.target.value })} />
               </div>
-              <div className="space-y-1.5">
-                <Label>WhatsApp</Label>
-                <Input
-                  inputMode="tel"
-                  value={customer.telefone}
-                  onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })}
-                  placeholder="(00) 00000-0000"
-                />
+              <div>
+                <label className="c-form-label">WhatsApp</label>
+                <input className="c-form-input" inputMode="tel" placeholder="(00) 00000-0000"
+                  value={customer.telefone} onChange={(e) => setCustomer({ ...customer, telefone: e.target.value })} />
               </div>
-              <div className="space-y-1.5">
-                <Label>Endereço de entrega</Label>
-                <Textarea
-                  rows={2}
-                  value={customer.endereco}
-                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
-                  placeholder="Rua, número, bairro, referência"
-                />
+              <div>
+                <label className="c-form-label">Endereço</label>
+                <textarea className="c-form-textarea" rows={2} placeholder="Rua, nº, bairro"
+                  value={customer.endereco} onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })} />
               </div>
-              <Button
-                className="w-full h-11 text-white font-semibold"
-                style={{ backgroundColor: primary }}
-                onClick={() => {
-                  if (!customer.nome.trim() || !customer.telefone.trim()) {
-                    toast.error("Informe nome e WhatsApp");
-                    return;
-                  }
-                  try {
-                    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
-                      nome: customer.nome,
-                      telefone: customer.telefone,
-                      tipo_atendimento: customer.tipo_atendimento,
-                      forma_pagamento: customer.forma_pagamento,
-                      endereco: customer.endereco,
-                    }));
-                  } catch {/* ignore */}
-                  toast.success("Cadastro salvo!");
-                  openAccount();
-                }}
-              >
-                Salvar cadastro
-              </Button>
+              <button className="c-submit-btn" onClick={() => {
+                if (!customer.nome.trim() || !customer.telefone.trim()) { toast.error("Informe nome e WhatsApp"); return; }
+                try {
+                  localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                    nome: customer.nome, telefone: customer.telefone,
+                    tipo_atendimento: customer.tipo_atendimento, forma_pagamento: customer.forma_pagamento,
+                    endereco: customer.endereco,
+                  }));
+                } catch {/* ignore */}
+                toast.success("Cadastro salvo!");
+                openAccount();
+              }}>Salvar cadastro</button>
             </div>
           ) : (
             <div className="space-y-4 pt-2">
-              <div
-                className="rounded-2xl p-4 text-white"
-                style={{ background: `linear-gradient(135deg, ${primary}, ${primary}cc)` }}
-              >
+              <div className="rounded-2xl p-4 text-white" style={{ background: "linear-gradient(135deg,#FF6B1A,#FF4500)" }}>
                 <div className="flex items-center gap-2 text-sm opacity-90">
-                  <Star className="h-4 w-4 fill-current" />
-                  Programa de fidelidade
+                  <Star className="h-4 w-4 fill-current" /> Programa de fidelidade
                 </div>
                 <div className="mt-2 text-3xl font-extrabold">
                   {accountLoading ? "…" : (accountData?.pontos ?? 0)} <span className="text-base font-medium opacity-90">pontos</span>
                 </div>
                 <div className="text-xs opacity-90 mt-1">
-                  {accountLoading
-                    ? "Carregando..."
-                    : `${accountData?.pedidos ?? 0} pedido(s) • ${formatBRL(accountData?.total ?? 0)} acumulados`}
+                  {accountLoading ? "Carregando..." : `${accountData?.pedidos ?? 0} pedido(s) • ${formatBRL(accountData?.total ?? 0)} acumulados`}
                 </div>
                 <div className="text-[11px] opacity-80 mt-2">A cada R$ 10,00 em pedidos você ganha 1 ponto.</div>
               </div>
-
-              <div className="rounded-xl border border-neutral-200 p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Nome</span>
-                  <span className="font-medium text-neutral-900">{customer.nome}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">WhatsApp</span>
-                  <span className="font-medium text-neutral-900">{customer.telefone}</span>
-                </div>
+              <div className="rounded-xl border p-3 space-y-2 text-sm" style={{ borderColor: "rgba(255,180,100,0.12)" }}>
+                <div className="flex justify-between"><span style={{ color: "#B8A898" }}>Nome</span><span>{customer.nome}</span></div>
+                <div className="flex justify-between"><span style={{ color: "#B8A898" }}>WhatsApp</span><span>{customer.telefone}</span></div>
                 {customer.endereco && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-neutral-500 shrink-0">Endereço</span>
-                    <span className="font-medium text-neutral-900 text-right">{customer.endereco}</span>
-                  </div>
+                  <div className="flex justify-between gap-3"><span style={{ color: "#B8A898" }} className="shrink-0">Endereço</span><span className="text-right">{customer.endereco}</span></div>
                 )}
               </div>
-
               <div className="space-y-2">
-                <Label className="text-xs text-neutral-500">Editar endereço de entrega</Label>
-                <Textarea
-                  rows={2}
-                  value={customer.endereco}
-                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    try {
-                      localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
-                        nome: customer.nome,
-                        telefone: customer.telefone,
-                        tipo_atendimento: customer.tipo_atendimento,
-                        forma_pagamento: customer.forma_pagamento,
-                        endereco: customer.endereco,
-                      }));
-                      toast.success("Dados atualizados");
-                    } catch {/* ignore */}
-                  }}
-                >
-                  Atualizar dados
-                </Button>
+                <label className="c-form-label">Editar endereço</label>
+                <textarea className="c-form-textarea" rows={2} value={customer.endereco}
+                  onChange={(e) => setCustomer({ ...customer, endereco: e.target.value })} />
+                <button className="c-submit-btn" style={{ height: 42, fontSize: 13 }} onClick={() => {
+                  try {
+                    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({
+                      nome: customer.nome, telefone: customer.telefone,
+                      tipo_atendimento: customer.tipo_atendimento, forma_pagamento: customer.forma_pagamento,
+                      endereco: customer.endereco,
+                    }));
+                    toast.success("Dados atualizados");
+                  } catch {/* ignore */}
+                }}>Atualizar dados</button>
               </div>
-
-              <Button
-                variant="ghost"
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={logoutAccount}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair deste dispositivo
-              </Button>
+              <button onClick={logoutAccount} className="w-full text-sm py-2 rounded-lg flex items-center justify-center gap-2"
+                style={{ color: "#ff6b6b", background: "rgba(255,107,107,.08)" }}>
+                <LogOut className="h-4 w-4" /> Sair deste dispositivo
+              </button>
             </div>
           )}
         </DialogContent>
