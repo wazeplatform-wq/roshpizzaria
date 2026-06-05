@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import MesasView from "@/components/pedidos/MesasView";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
