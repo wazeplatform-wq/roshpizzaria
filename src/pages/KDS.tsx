@@ -675,23 +675,35 @@ export default function KDS() {
         {/* Tabs / Filters */}
         <div style={{display:'flex', flexDirection: 'column'}}>
           <div className="kds-tabs">
-            <button className="kds-tab active">🛵 Delivery / Balcão <span style={{marginLeft:8, background:'#0b0b0d', padding:'2px 8px', borderRadius:8}}>4</span></button>
-            <button className="kds-tab">🪑 Mesas <span style={{marginLeft:8, background:'#0b0b0d', padding:'2px 8px', borderRadius:8}}>6</span></button>
+            <button
+              className={`kds-tab ${activeTab === "delivery" ? "active" : ""}`}
+              onClick={() => setActiveTab("delivery")}
+            >
+              🛵 Delivery / Balcão <span style={{marginLeft:8, background:'#0b0b0d', padding:'2px 8px', borderRadius:8}}>{totalAtivos}</span>
+            </button>
+            <button
+              className={`kds-tab ${activeTab === "mesas" ? "active" : ""}`}
+              onClick={() => setActiveTab("mesas")}
+            >
+              🪑 Mesas
+            </button>
           </div>
-          <div className="kds-filterbar">
-            <div className="kds-chips">
-              <div className="kds-chip active">Todos os canais</div>
-              <div className="kds-chip">Cardápio Digital</div>
-              <div className="kds-chip">WhatsApp</div>
-              <div className="kds-chip">Instagram</div>
-              <div className="kds-chip">Chat</div>
-              <div className="kds-chip">Manual / Balcão</div>
+          {activeTab === "delivery" && (
+            <div className="kds-filterbar">
+              <div className="kds-chips">
+                <div className="kds-chip active">Todos os canais</div>
+                <div className="kds-chip">Cardápio Digital</div>
+                <div className="kds-chip">WhatsApp</div>
+                <div className="kds-chip">Instagram</div>
+                <div className="kds-chip">Chat</div>
+                <div className="kds-chip">Manual / Balcão</div>
+              </div>
+              <div style={{color:'#6B7280', fontSize:12}}>Exibindo: 6 colunas</div>
             </div>
-            <div style={{color:'#6B7280', fontSize:12}}>Exibindo: 6 colunas</div>
-          </div>
+          )}
         </div>
 
-        {/* Columns */}
+        {/* Content */}
         {loading ? (
           <div style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -706,6 +718,8 @@ export default function KDS() {
             <span style={{ fontSize: 13, color: "#6B7280" }}>Carregando pedidos...</span>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
+        ) : activeTab === "mesas" ? (
+          companyId ? <MesasView companyId={companyId} /> : null
         ) : (
           <div className="kds-columns">
             {KDS_STATUSES.map((status) => (
