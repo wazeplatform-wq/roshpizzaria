@@ -395,6 +395,7 @@ export default function KDS() {
   const [loading, setLoading] = useState(true);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const [clock, setClock] = useState(new Date());
+  const [activeTab, setActiveTab] = useState<"delivery" | "mesas">("delivery");
   const audioRef = useRef<AudioContext | null>(null);
 
   // Clock ticker
